@@ -2,15 +2,15 @@ import { configureStore } from "@reduxjs/toolkit";
 import { type ReactNode } from "react";
 import { Provider } from "react-redux";
 import { MemoryRouter } from "react-router-dom";
-import authReducer from "../features/auth/authSlice";
+import { rootReducer, type RootState } from "../store/store";
 
 export function renderWithStore(
   ui: ReactNode,
-  preloadedState?: Partial<ReturnType<typeof authReducer>>
+  preloadedState?: Partial<RootState>
 ) {
   const store = configureStore({
-    reducer: authReducer,
-    preloadedState: preloadedState as ReturnType<typeof authReducer>,
+    reducer: rootReducer, // <-- Use your root reducer
+    preloadedState,
   });
 
   return {
