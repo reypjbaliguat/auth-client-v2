@@ -1,4 +1,5 @@
 import SignInPage from "@/app/(auth)/sign-in/page";
+import "@testing-library/jest-dom";
 import { it } from "node:test";
 import { expect, test } from "vitest";
 
