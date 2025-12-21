@@ -1,19 +1,19 @@
-"use client";
+'use client';
 
-import { hydrateAuthFromCookie } from "@/core/utils/hydrateAuthFromCookie";
-import { useEffect } from "react";
-import { useDispatch } from "react-redux";
+import { hydrateAuthFromCookie } from '@/core/utils/hydrateAuthFromCookie';
+import { useEffect } from 'react';
+import { useDispatch } from 'react-redux';
 
 export default function AppShell({ children }: { children: React.ReactNode }) {
-  const dispatch = useDispatch();
+	const dispatch = useDispatch();
 
-  useEffect(() => {
-    hydrateAuthFromCookie(dispatch);
-  }, [dispatch]);
+	useEffect(() => {
+		hydrateAuthFromCookie(dispatch);
+	}, [dispatch]);
 
-  return (
-    <>
-      <main>{children}</main>
-    </>
-  );
+	return (
+		<>
+			<main>{children}</main>
+		</>
+	);
 }
