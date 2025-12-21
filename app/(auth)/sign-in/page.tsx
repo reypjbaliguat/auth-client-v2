@@ -2,12 +2,27 @@
 
 import { setAuthenticated } from '@/core/store/authSlice';
 import { useAppDispatch } from '@/core/store/hooks';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { Alert, Box, Button, Divider, TextField } from '@mui/material';
+import { GoogleLogin } from '@react-oauth/google';
 import Cookies from 'js-cookie';
 import { useRouter } from 'next/navigation';
+import { Controller, useForm } from 'react-hook-form';
+import { AuthFormContainer } from '../components';
+import schema, { SignInFormData } from './schema';
 
 export default function SignInPage() {
 	const dispatch = useAppDispatch();
 	const router = useRouter();
+	const error = {};
+	const isLoading = false;
+	const {
+		handleSubmit,
+		control,
+		formState: { isSubmitting },
+		setError,
+		//to be updated
+	} = useForm<SignInFormData>({ resolver: zodResolver(schema) });
 
 	const handleLogin = async () => {
 		// TODO: call your real backend
@@ -28,11 +43,75 @@ export default function SignInPage() {
 		router.replace('/dashboard');
 	};
 
+	//to be updated
+	const onSubmit = async (formData: SignInFormData) => {
+		try {
+		} catch (err) {}
+	};
+
+	const handleGoogleSuccess = () => {};
+	const handleGoogleFailure = () => {};
+
 	return (
-		<main style={{ padding: 24 }}>
-			<h1>Sign In</h1>
-			{/* Replace with real form */}
-			<button onClick={handleLogin}>Fake Login</button>
-		</main>
+		<AuthFormContainer label="Login">
+			<Box component="form" onSubmit={handleSubmit(onSubmit)}>
+				<div className="flex gap-x-2 my-4">
+					<div className="basis-1/2 flex">
+						<Controller
+							name="email"
+							control={control}
+							rules={{ required: 'Email is required' }}
+							render={({ field, fieldState: { error } }) => (
+								<TextField
+									{...field}
+									label="Email"
+									variant="outlined"
+									size="small"
+									value={field.value || ''}
+									error={!!error}
+									fullWidth
+								/>
+							)}
+						/>
+					</div>
+					<div className="basis-1/2 flex">
+						<Controller
+							name="password"
+							control={control}
+							rules={{ required: 'Password is required' }}
+							render={({ field, fieldState: { error } }) => (
+								<TextField
+									{...field}
+									label="Password"
+									type="password"
+									variant="outlined"
+									size="small"
+									error={!!error}
+									value={field.value || ''}
+									fullWidth
+								/>
+							)}
+						/>
+					</div>
+				</div>
+				{error && 'data' in error && (
+					<div className="basis-full mb-4">
+						<Alert severity="error">
+							{(error.data as { message?: string })?.message || 'An error occurred'}
+						</Alert>
+					</div>
+				)}
+				<Button loading={isSubmitting || isLoading} fullWidth variant="contained" type="submit">
+					Login
+				</Button>
+			</Box>
+
+			<Divider className="text-gray-500 py-4">OR</Divider>
+
+			{/* Google Login Button */}
+			<div className="google-button-container">
+				<GoogleLogin onSuccess={handleGoogleSuccess} onError={handleGoogleFailure} />
+			</div>
+		</AuthFormContainer>
 	);
 }
