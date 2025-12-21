@@ -12,10 +12,9 @@ function AuthFormContainer({ label, children }: Props) {
 	const googleClientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
 	const isLogin = label === 'Login';
 	const isOtp = label === 'OTP Verification';
-
 	return (
 		<GoogleOAuthProvider clientId={googleClientId || ''}>
-			<Card className="xl:p-5 md:p-10 px-5 py-7 flex justify-center flex-col w-[300px] md:w-[400px]">
+			<Card className="md:p-10 px-5 py-7 flex justify-center flex-col w-[300px] md:w-[500px]">
 				<Image src={'/assets/logo.png'} width={50} height={50} className="mb-5" alt="logo" />
 				<h6 className="text-3xl mb-5"> {label} </h6>
 				{isLogin && <span className="text-lg">Please enter your login info</span>}
