@@ -10,7 +10,7 @@
 		"prepare": "husky"
 	},
 	"lint-staged": {
-		"{app,pages,components,src}/**/*.{js,jsx,ts,tsx,css,scss,md,json}": "prettier --write"
+		"{app,pages,components,src}/**/*.{js,jsx,ts,tsx,css,scss,md,json}": "npx prettier --write ."
 	},
 	"dependencies": {
 		"@emotion/react": "^11.14.0",
