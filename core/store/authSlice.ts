@@ -10,6 +10,7 @@ export interface AuthState {
 	isAuthenticated: boolean;
 	loading: boolean;
 	user: User | null;
+	token?: string;
 }
 
 const initialState: AuthState = {
