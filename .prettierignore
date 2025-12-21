@@ -1,21 +1,10 @@
-# dependencies
 node_modules
 .next
-out
 dist
 build
-
-# env
-.env
-.env.*
-
-# lock files
+coverage
+.env*
+*.log
 package-lock.json
 pnpm-lock.yaml
 yarn.lock
-
-# logs
-*.log
-
-# coverage
-coverage
