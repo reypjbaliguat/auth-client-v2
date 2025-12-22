@@ -55,44 +55,41 @@ export default function SignInPage() {
 	return (
 		<AuthFormContainer label="Login">
 			<Box component="form" onSubmit={handleSubmit(onSubmit)}>
-				<div className="flex gap-x-2 my-4">
-					<div className="basis-1/2 flex">
-						<Controller
-							name="email"
-							control={control}
-							rules={{ required: 'Email is required' }}
-							render={({ field, fieldState: { error } }) => (
-								<TextField
-									{...field}
-									label="Email"
-									variant="outlined"
-									size="small"
-									value={field.value || ''}
-									error={!!error}
-									fullWidth
-								/>
-							)}
-						/>
-					</div>
-					<div className="basis-1/2 flex">
-						<Controller
-							name="password"
-							control={control}
-							rules={{ required: 'Password is required' }}
-							render={({ field, fieldState: { error } }) => (
-								<TextField
-									{...field}
-									label="Password"
-									type="password"
-									variant="outlined"
-									size="small"
-									error={!!error}
-									value={field.value || ''}
-									fullWidth
-								/>
-							)}
-						/>
-					</div>
+				<div className="flex flex-col gap-y-2 my-4">
+					<Controller
+						name="email"
+						control={control}
+						rules={{ required: 'Email is required' }}
+						render={({ field, fieldState: { error } }) => (
+							<TextField
+								{...field}
+								label="Email"
+								variant="outlined"
+								value={field.value || ''}
+								error={!!error}
+								helperText={error ? error.message : null}
+								fullWidth
+							/>
+						)}
+					/>
+
+					<Controller
+						name="password"
+						control={control}
+						rules={{ required: 'Password is required' }}
+						render={({ field, fieldState: { error } }) => (
+							<TextField
+								{...field}
+								label="Password"
+								type="password"
+								variant="outlined"
+								error={!!error}
+								value={field.value || ''}
+								helperText={error ? error.message : null}
+								fullWidth
+							/>
+						)}
+					/>
 				</div>
 				{error && 'data' in error && (
 					<div className="basis-full mb-4">
