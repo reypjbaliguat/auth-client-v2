@@ -11,13 +11,13 @@ import { useEffect } from 'react';
  */
 export function useAuthInit() {
 	const dispatch = useAppDispatch();
-
 	useEffect(() => {
 		dispatch(startAuthCheck());
 
 		const token = Cookies.get('token');
 
 		if (token) {
+			console.log('Token found in cookie:', token);
 			// Optional: decode token / fetch /me to get user info
 			dispatch(setAuthenticated(undefined));
 		} else {

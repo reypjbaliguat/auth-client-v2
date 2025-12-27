@@ -17,7 +17,6 @@ export default function ProtectedRoute({ children }: ProtectedRouteProps) {
 	const router = useRouter();
 	const loading = useAppSelector(selectAuthLoading);
 	const isAuthenticated = useAppSelector(selectIsAuthenticated);
-
 	if (loading) {
 		return <div>Checking auth…</div>;
 	}
