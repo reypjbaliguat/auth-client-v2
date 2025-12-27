@@ -1,26 +1,21 @@
 'use client';
 
 import { useLoginMutation } from '@/core/store/api/authApi';
-import { useAppDispatch } from '@/core/store/hooks';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Alert, Box, Button, Divider, TextField } from '@mui/material';
 import { GoogleLogin } from '@react-oauth/google';
-import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { AuthFormContainer, OtpForm } from '../components';
 import schema, { SignInFormData } from './schema';
 
 export default function SignInPage() {
-	const dispatch = useAppDispatch();
-	const router = useRouter();
 	const [step, setStep] = useState<'Login' | 'OTP Verification'>('Login');
 	const {
 		handleSubmit,
 		control,
 		formState: { isSubmitting },
 		getValues,
-		setError,
 		//to be updated
 	} = useForm<SignInFormData>({ resolver: zodResolver(schema) });
 
