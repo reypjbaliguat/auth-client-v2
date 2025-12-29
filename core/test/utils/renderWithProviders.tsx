@@ -1,4 +1,5 @@
 import type { RootState } from '@/core/store';
+import { baseApi } from '@/core/store/api';
 import authReducer, { type AuthState } from '@/core/store/authSlice';
 import { configureStore } from '@reduxjs/toolkit';
 import { render } from '@testing-library/react';
@@ -11,7 +12,11 @@ type PartialRootState = Partial<RootState> & {
 
 export function renderWithProviders(ui: ReactElement, preloadedState?: PartialRootState) {
 	const store = configureStore({
-		reducer: { auth: authReducer },
+		reducer: {
+			auth: authReducer,
+			[baseApi.reducerPath]: baseApi.reducer,
+		},
+		middleware: (getDefaultMiddleware) => getDefaultMiddleware().concat(baseApi.middleware),
 		preloadedState: preloadedState as RootState,
 	});
 
