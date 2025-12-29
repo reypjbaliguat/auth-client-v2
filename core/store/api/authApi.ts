@@ -16,6 +16,16 @@ interface VerifyOTPResponse {
 	user: User;
 }
 
+interface GoogleLoginRequest {
+	credential: string;
+}
+
+interface GoogleLoginResponse {
+	accessToken: string;
+	refreshToken: string;
+	user: User;
+}
+
 export const authApi = baseApi.injectEndpoints({
 	endpoints: (builder) => ({
 		login: builder.mutation<LoginResponse, LoginRequest>({
@@ -46,8 +56,21 @@ export const authApi = baseApi.injectEndpoints({
 			query: () => `auth/me`,
 			providesTags: ['User'],
 		}),
+		googleLogin: builder.mutation<GoogleLoginResponse, GoogleLoginRequest>({
+			query: (credentials) => ({
+				url: `auth/google-login`,
+				method: 'POST',
+				body: credentials,
+			}),
+			invalidatesTags: ['Auth'],
+		}),
 	}),
 });
 
-export const { useLoginMutation, useLogoutMutation, useVerifyOtpMutation, useGetCurrentUserQuery } =
-	authApi;
+export const {
+	useLoginMutation,
+	useLogoutMutation,
+	useVerifyOtpMutation,
+	useGetCurrentUserQuery,
+	useGoogleLoginMutation,
+} = authApi;

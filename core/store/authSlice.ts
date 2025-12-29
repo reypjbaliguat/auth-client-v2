@@ -17,7 +17,7 @@ export interface AuthState {
 
 const initialState: AuthState = {
 	isAuthenticated: false,
-	loading: true, // start "checking"
+	loading: false, // Changed to false to prevent hydration mismatches
 	user: null,
 };
 

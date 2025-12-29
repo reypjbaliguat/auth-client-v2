@@ -4,6 +4,7 @@ import { selectAuthLoading, selectIsAuthenticated } from '@/core/store/authSelec
 import { useAppSelector } from '@/core/store/hooks';
 import { useRouter } from 'next/navigation';
 import type { ReactNode } from 'react';
+import { useEffect, useEffectEvent, useState } from 'react';
 
 interface ProtectedRouteProps {
 	children: ReactNode;
@@ -17,6 +18,21 @@ export default function ProtectedRoute({ children }: ProtectedRouteProps) {
 	const router = useRouter();
 	const loading = useAppSelector(selectAuthLoading);
 	const isAuthenticated = useAppSelector(selectIsAuthenticated);
+	const [isMounted, setIsMounted] = useState(false);
+
+	const mount = useEffectEvent(() => {
+		setIsMounted(true);
+	});
+
+	useEffect(() => {
+		mount();
+	}, []);
+
+	// Don't render anything until client-side mount to prevent hydration issues
+	if (!isMounted) {
+		return <div>Loading...</div>;
+	}
+
 	if (loading) {
 		return <div>Checking auth…</div>;
 	}
