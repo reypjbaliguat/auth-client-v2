@@ -1,9 +1,9 @@
 'use client';
 
-import { setUnauthenticated } from '@/core/store/authSlice';
-import { useAppDispatch } from '@/core/store/hooks';
 import Cookies from 'js-cookie';
 import { useRouter } from 'next/navigation';
+import { useAppDispatch } from '../../../hooks';
+import { setUnauthenticated } from '../../auth/authSlice';
 
 export function useLogout() {
 	const dispatch = useAppDispatch();

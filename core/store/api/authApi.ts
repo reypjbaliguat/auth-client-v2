@@ -1,4 +1,4 @@
-import type { User } from '../authSlice';
+import type { User } from '../../types';
 import { baseApi } from './baseApi';
 
 interface LoginRequest {

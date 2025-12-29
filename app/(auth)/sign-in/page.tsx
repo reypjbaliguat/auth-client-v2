@@ -1,7 +1,7 @@
 'use client';
 
 import { useGoogleLoginMutation, useLoginMutation } from '@/core/store/api/authApi';
-import { setAuthenticated } from '@/core/store/authSlice';
+import { setAuthenticated } from '@/core/store/features/auth';
 import { useAppDispatch } from '@/core/store/hooks';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Alert, Box, Button, Divider, TextField } from '@mui/material';

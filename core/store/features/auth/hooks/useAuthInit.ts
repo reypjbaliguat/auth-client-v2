@@ -1,9 +1,9 @@
 'use client';
 
-import { setAuthenticated, setUnauthenticated, startAuthCheck } from '@/core/store/authSlice';
-import { useAppDispatch } from '@/core/store/hooks';
 import Cookies from 'js-cookie';
 import { useEffect } from 'react';
+import { useAppDispatch } from '../../../hooks';
+import { setAuthenticated, setUnauthenticated, startAuthCheck } from '../../auth/authSlice';
 
 /**
  * Hydrates Redux auth state from the "token" cookie.

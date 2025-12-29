@@ -1,7 +1,7 @@
 'use client';
 
 import ProtectedRoute from '@/core/components/ProtectedRoute';
-import { setUnauthenticated } from '@/core/store/authSlice';
+import { setUnauthenticated } from '@/core/store/features/auth';
 import { useAppDispatch } from '@/core/store/hooks';
 import { Button } from '@mui/material';
 

@@ -11,17 +11,17 @@ import {
 } from 'redux-persist';
 import createWebStorage from 'redux-persist/lib/storage/createWebStorage';
 import { baseApi } from './api';
-import authReducer from './authSlice';
+import { authReducer } from './features/auth';
 
 const createNoopStorage = () => {
 	return {
-		getItem(_key: string) {
+		getItem() {
 			return Promise.resolve(null);
 		},
 		setItem(_key: string, value: unknown) {
 			return Promise.resolve(value);
 		},
-		removeItem(_key: string) {
+		removeItem() {
 			return Promise.resolve();
 		},
 	};

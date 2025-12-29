@@ -1,6 +1,6 @@
 'use client';
 
-import { selectAuthLoading, selectIsAuthenticated } from '@/core/store/authSelectors';
+import { selectAuthLoading, selectIsAuthenticated } from '@/core/store/features/auth';
 import { useAppSelector } from '@/core/store/hooks';
 import { useRouter } from 'next/navigation';
 import type { ReactNode } from 'react';

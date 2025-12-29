@@ -1,7 +1,7 @@
 'use client';
 
 import { useVerifyOtpMutation } from '@/core/store/api/authApi';
-import { setAuthenticated } from '@/core/store/authSlice';
+import { setAuthenticated } from '@/core/store/features/auth';
 import { useAppDispatch } from '@/core/store/hooks';
 import { Button } from '@mui/material';
 import Cookies from 'js-cookie';

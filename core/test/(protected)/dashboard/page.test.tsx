@@ -13,6 +13,7 @@ describe('DashboardPage', () => {
 				isAuthenticated: false,
 				loading: false,
 				user: null,
+				_persist: { rehydrated: true, version: -1 },
 			},
 		});
 

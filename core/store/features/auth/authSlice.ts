@@ -1,13 +1,5 @@
+import type { User } from '@/core/types/user';
 import { createSlice, type PayloadAction } from '@reduxjs/toolkit';
-
-export interface User {
-	_id: string;
-	email: string;
-	isActive: boolean;
-	emailVerified: boolean;
-	createdAt: string;
-	// add fields as needed
-}
 
 export interface AuthState {
 	isAuthenticated: boolean;
