@@ -47,6 +47,17 @@ function OtpForm({ email }: Props) {
 				path: '/', // Available across entire app
 			});
 
+			// Store refresh token if provided
+			if (response.refreshToken) {
+				Cookies.set('refreshToken', response.refreshToken, {
+					secure: process.env.NODE_ENV === 'production',
+					sameSite: 'strict',
+					httpOnly: false,
+					expires: 30, // 30 days
+					path: '/',
+				});
+			}
+
 			// Update Redux auth state
 			dispatch(
 				setAuthenticated({

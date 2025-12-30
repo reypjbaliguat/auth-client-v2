@@ -64,6 +64,17 @@ export const authApi = baseApi.injectEndpoints({
 			}),
 			invalidatesTags: ['Auth'],
 		}),
+		refreshToken: builder.mutation<
+			{ accessToken: string; refreshToken?: string },
+			{ refreshToken: string }
+		>({
+			query: ({ refreshToken }) => ({
+				url: 'auth/refresh',
+				method: 'POST',
+				body: { refreshToken },
+			}),
+			invalidatesTags: ['Auth'],
+		}),
 	}),
 });
 
@@ -73,4 +84,5 @@ export const {
 	useVerifyOtpMutation,
 	useGetCurrentUserQuery,
 	useGoogleLoginMutation,
+	useRefreshTokenMutation,
 } = authApi;

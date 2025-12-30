@@ -11,6 +11,7 @@ export function useLogout() {
 
 	return () => {
 		Cookies.remove('token');
+		Cookies.remove('refreshToken');
 		dispatch(setUnauthenticated());
 		router.replace('/sign-in');
 	};
