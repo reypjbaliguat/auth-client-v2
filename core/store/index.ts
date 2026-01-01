@@ -1,17 +1,9 @@
 import { combineReducers, configureStore } from '@reduxjs/toolkit';
-import {
-	FLUSH,
-	PAUSE,
-	PERSIST,
-	persistReducer,
-	persistStore,
-	PURGE,
-	REGISTER,
-	REHYDRATE,
-} from 'redux-persist';
+import { persistReducer, persistStore } from 'redux-persist';
 import createWebStorage from 'redux-persist/lib/storage/createWebStorage';
 import { baseApi } from './api';
 import { authReducer } from './features/auth';
+import rootMiddleware from './rootMiddleware';
 
 const createNoopStorage = () => {
 	return {
@@ -30,29 +22,25 @@ const createNoopStorage = () => {
 const storage = typeof window !== 'undefined' ? createWebStorage('local') : createNoopStorage();
 
 // Persist config for auth slice
-const authPersistConfig = {
-	key: 'auth',
+const persistConfig = {
+	key: 'root',
 	storage,
-	whitelist: ['user', 'isAuthenticated'], // Only persist specific fields from auth state
-	blacklist: ['loading'], // Don't persist loading state as it's temporary UI state
+	whitelist: ['auth'], // only auth will be persisted
 };
-
 // Create root reducer
 const rootReducer = combineReducers({
-	auth: persistReducer(authPersistConfig, authReducer),
+	auth: persistReducer(persistConfig, authReducer),
 	[baseApi.reducerPath]: baseApi.reducer,
 });
 
+const persistedReducer = persistReducer(persistConfig, rootReducer);
+
 export const store = configureStore({
-	reducer: rootReducer,
-	// Adding the api middleware enables caching, invalidation, polling,
-	// and other useful features of RTK-Query.
-	middleware: (getDefaultMiddleware) =>
-		getDefaultMiddleware({
-			serializableCheck: {
-				ignoredActions: [FLUSH, REHYDRATE, PAUSE, PERSIST, PURGE, REGISTER],
-			},
-		}).concat(baseApi.middleware),
+	reducer: persistedReducer,
+	middleware: (getDefaultMiddleware) => [
+		...getDefaultMiddleware({ serializableCheck: false }).concat(rootMiddleware),
+	],
+	devTools: process.env.NODE_ENV !== 'production',
 });
 
 export const persistor = persistStore(store);
