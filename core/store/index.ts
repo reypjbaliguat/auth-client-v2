@@ -33,7 +33,7 @@ const rootReducer = combineReducers({
 	[baseApi.reducerPath]: baseApi.reducer,
 });
 
-const persistedReducer = persistReducer(persistConfig, rootReducer);
+export const persistedReducer = persistReducer(persistConfig, rootReducer);
 
 export const store = configureStore({
 	reducer: persistedReducer,
