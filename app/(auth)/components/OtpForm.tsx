@@ -67,7 +67,7 @@ function OtpForm({ email }: Props) {
 			);
 
 			// Redirect to dashboard
-			//router.replace('/dashboard'); // Use replace to prevent back navigation to OTP
+			router.replace('/dashboard'); // Use replace to prevent back navigation to OTP
 		} catch (error) {
 			console.error('OTP verification failed:', error);
 			// Handle error appropriately - could set error state here
