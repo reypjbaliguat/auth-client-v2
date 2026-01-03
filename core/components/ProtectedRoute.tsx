@@ -18,8 +18,9 @@ export default function ProtectedRoute({ children }: ProtectedRouteProps) {
 	const router = useRouter();
 	const loading = useAppSelector(selectAuthLoading);
 	const isAuthenticated = useAppSelector(selectIsAuthenticated);
+	const authState = useAppSelector((state) => state.auth);
 	const [isMounted, setIsMounted] = useState(false);
-
+	console.log(authState);
 	const mount = useEffectEvent(() => {
 		setIsMounted(true);
 	});

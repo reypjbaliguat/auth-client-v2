@@ -1,14 +1,14 @@
 'use client';
 
 import { useGoogleLoginMutation, useLoginMutation } from '@/core/store/api/authApi';
-import { setAuthenticated } from '@/core/store/features/auth';
-import { useAppDispatch } from '@/core/store/hooks';
+import { selectIsAuthenticated, setAuthenticated } from '@/core/store/features/auth';
+import { useAppDispatch, useAppSelector } from '@/core/store/hooks';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Alert, Box, Button, Divider, TextField } from '@mui/material';
 import { GoogleLogin } from '@react-oauth/google';
 import Cookies from 'js-cookie';
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { AuthFormContainer, OtpForm } from '../components';
 import schema, { SignInFormData } from './schema';
@@ -16,6 +16,8 @@ import schema, { SignInFormData } from './schema';
 export default function SignInPage() {
 	const [step, setStep] = useState<'Login' | 'OTP Verification'>('Login');
 	const dispatch = useAppDispatch();
+	const isAuthenticated = useAppSelector(selectIsAuthenticated);
+
 	const router = useRouter();
 	const {
 		handleSubmit,
@@ -28,6 +30,13 @@ export default function SignInPage() {
 	const [login, { isLoading, error }] = useLoginMutation();
 	const [googleLogin, { isLoading: isGoogleLoading, error: googleError }] =
 		useGoogleLoginMutation();
+
+	// Redirect if already authenticated
+	useEffect(() => {
+		if (isAuthenticated) {
+			router.push('/dashboard');
+		}
+	}, [isAuthenticated, router]);
 
 	//to be updated
 	const onRequestOtp = async (formData: SignInFormData) => {

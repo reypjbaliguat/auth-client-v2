@@ -29,7 +29,7 @@ const persistConfig = {
 };
 // Create root reducer
 const rootReducer = combineReducers({
-	auth: persistReducer(persistConfig, authReducer),
+	auth: authReducer,
 	[baseApi.reducerPath]: baseApi.reducer,
 });
 
@@ -37,9 +37,8 @@ const persistedReducer = persistReducer(persistConfig, rootReducer);
 
 export const store = configureStore({
 	reducer: persistedReducer,
-	middleware: (getDefaultMiddleware) => [
-		...getDefaultMiddleware({ serializableCheck: false }).concat(rootMiddleware),
-	],
+	middleware: (getDefaultMiddleware) =>
+		getDefaultMiddleware({ serializableCheck: false }).concat(rootMiddleware),
 	devTools: process.env.NODE_ENV !== 'production',
 });
 
