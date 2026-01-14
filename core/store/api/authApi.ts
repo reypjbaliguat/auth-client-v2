@@ -36,6 +36,14 @@ export const authApi = baseApi.injectEndpoints({
 			}),
 			invalidatesTags: ['Auth'],
 		}),
+		register: builder.mutation<LoginResponse, LoginRequest>({
+			query: (credentials) => ({
+				url: `auth/register`,
+				method: 'POST',
+				body: credentials,
+			}),
+			invalidatesTags: ['Auth'],
+		}),
 		// verify Otp
 		verifyOtp: builder.mutation<VerifyOTPResponse, { email: string; otp: string }>({
 			query: ({ email, otp }) => ({
@@ -85,4 +93,5 @@ export const {
 	useGetCurrentUserQuery,
 	useGoogleLoginMutation,
 	useRefreshTokenMutation,
+	useRegisterMutation,
 } = authApi;
