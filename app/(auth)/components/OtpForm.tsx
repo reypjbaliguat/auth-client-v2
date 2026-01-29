@@ -3,7 +3,7 @@
 import { useVerifyOtpMutation } from '@/core/store/api/authApi';
 import { resetOtpStep, setAuthenticated } from '@/core/store/features/auth';
 import { useAppDispatch } from '@/core/store/hooks';
-import { Button } from '@mui/material';
+import { Alert, Button } from '@mui/material';
 import Cookies from 'js-cookie';
 import { MuiOtpInput } from 'mui-one-time-password-input';
 import { useRouter } from 'next/navigation';
@@ -14,17 +14,20 @@ interface Props {
 }
 function OtpForm({ email }: Props) {
 	const [otp, setOtp] = useState('');
+	const [error, setError] = useState<string>('');
 	const dispatch = useAppDispatch();
 	const router = useRouter();
 	const [verifyOtp, { isLoading }] = useVerifyOtpMutation();
 	const handleChange = (newValue: string) => {
 		setOtp(newValue);
+		setError(''); // Clear error when user types
 	};
 	const handleSubmit = async (event: React.FormEvent) => {
 		event.preventDefault();
+		setError(''); // Clear any existing errors
 
 		if (!otp || otp.length !== 6) {
-			console.error('Please enter a valid 6-digit OTP');
+			setError('Please enter a valid 6-digit OTP');
 			return;
 		}
 
@@ -72,14 +75,13 @@ function OtpForm({ email }: Props) {
 			// Redirect to dashboard
 			router.replace('/dashboard'); // Use replace to prevent back navigation to OTP
 		} catch (error) {
-			console.error('OTP verification failed:', error);
-			// Handle error appropriately - could set error state here
-			throw error;
+			setError('OTP verification failed. Please check your code and try again.');
 		}
 	};
 	return (
 		<div className="flex flex-col gap-y-4">
 			<MuiOtpInput value={otp} length={6} display={'flex'} gap={'5px'} onChange={handleChange} />
+			{error && <Alert severity="error">{error}</Alert>}
 			<Button loading={isLoading} variant="contained" color="primary" onClick={handleSubmit}>
 				Verify OTP
 			</Button>

@@ -15,7 +15,7 @@ import { Alert, Box, Button, Divider, TextField } from '@mui/material';
 import { GoogleLogin } from '@react-oauth/google';
 import Cookies from 'js-cookie';
 import { useRouter } from 'next/navigation';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { AuthFormContainer, OtpForm } from '../components';
 import schema, { SignInFormData } from './schema';
@@ -25,6 +25,7 @@ export default function SignInPage() {
 	const isAuthenticated = useAppSelector(selectIsAuthenticated);
 	const step = useAppSelector(selectOtpStep);
 	const persistedEmail = useAppSelector(selectOtpEmail);
+	const [customError, setCustomError] = useState<string>('');
 	console.log(step);
 	const router = useRouter();
 	const {
@@ -39,7 +40,7 @@ export default function SignInPage() {
 	const [googleLogin, { isLoading: isGoogleLoading, error: googleError }] =
 		useGoogleLoginMutation();
 
-	// Set Register step when component mounts (if not already in OTP verification)
+	// Set Login step when component mounts (if not already in OTP verification)
 	useEffect(() => {
 		if (step !== 'OTP Verification') {
 			dispatch(setOtpStep({ step: 'Login' }));
@@ -57,20 +58,22 @@ export default function SignInPage() {
 
 	//to be updated
 	const onRequestOtp = async (formData: SignInFormData) => {
+		setCustomError(''); // Clear any existing errors
 		try {
 			const payload = await login(formData).unwrap();
 			if (payload.message.includes('OTP sent')) {
 				dispatch(setOtpStep({ step: 'OTP Verification', email: formData.email }));
 			}
-		} catch (err) {
-			console.error(err);
+		} catch {
+			setCustomError('Login failed. Please check your credentials and try again.');
 		}
 	};
 
 	const handleGoogleSuccess = async (credentialResponse: { credential?: string }) => {
+		setCustomError(''); // Clear any existing errors
 		try {
 			if (!credentialResponse.credential) {
-				console.error('No credential received from Google');
+				setCustomError('No credential received from Google. Please try again.');
 				return;
 			}
 
@@ -110,12 +113,12 @@ export default function SignInPage() {
 			// Redirect to dashboard
 			router.replace('/dashboard');
 		} catch (error) {
-			console.error('Google login failed:', error);
+			setCustomError('Google login failed. Please try again.');
 		}
 	};
 
 	const handleGoogleFailure = () => {
-		console.error('Google login failed');
+		setCustomError('Google login failed. Please try again.');
 	};
 
 	return (
@@ -159,14 +162,16 @@ export default function SignInPage() {
 								)}
 							/>
 						</div>
-						{(error || googleError) && (
+						{(error || googleError || customError) && (
 							<div className="basis-full mb-4">
 								<Alert severity="error">
-									{error && 'data' in error
-										? (error.data as { message?: string })?.message || 'An error occurred'
-										: googleError && 'data' in googleError
-											? (googleError.data as { message?: string })?.message || 'Google login failed'
-											: 'An error occurred'}
+									{customError ||
+										(error && 'data' in error
+											? (error.data as { message?: string })?.message || 'An error occurred'
+											: googleError && 'data' in googleError
+												? (googleError.data as { message?: string })?.message ||
+													'Google login failed'
+												: 'An error occurred')}
 								</Alert>
 							</div>
 						)}

@@ -15,7 +15,7 @@ import { Alert, Box, Button, Divider, TextField } from '@mui/material';
 import { GoogleLogin } from '@react-oauth/google';
 import Cookies from 'js-cookie';
 import { useRouter } from 'next/navigation';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { AuthFormContainer, OtpForm } from '../components';
 import schema, { SignUpFormData } from './schema';
@@ -25,6 +25,7 @@ export default function SignUpPage() {
 	const isAuthenticated = useAppSelector(selectIsAuthenticated);
 	const step = useAppSelector(selectOtpStep);
 	const persistedEmail = useAppSelector(selectOtpEmail);
+	const [customError, setCustomError] = useState<string>('');
 
 	const router = useRouter();
 	const {
@@ -57,20 +58,22 @@ export default function SignUpPage() {
 
 	//to be updated
 	const onRequestOtp = async (formData: SignUpFormData) => {
+		setCustomError(''); // Clear any existing errors
 		try {
 			const payload = await register(formData).unwrap();
 			if (payload.message.includes('OTP sent')) {
 				dispatch(setOtpStep({ step: 'OTP Verification', email: formData.email }));
 			}
 		} catch (err) {
-			console.error(err);
+			setCustomError('Registration failed. Please check your details and try again.');
 		}
 	};
 
 	const handleGoogleSuccess = async (credentialResponse: { credential?: string }) => {
+		setCustomError(''); // Clear any existing errors
 		try {
 			if (!credentialResponse.credential) {
-				console.error('No credential received from Google');
+				setCustomError('No credential received from Google. Please try again.');
 				return;
 			}
 
@@ -110,12 +113,12 @@ export default function SignUpPage() {
 			// Redirect to dashboard
 			router.replace('/dashboard');
 		} catch (error) {
-			console.error('Google login failed:', error);
+			setCustomError('Google registration failed. Please try again.');
 		}
 	};
 
 	const handleGoogleFailure = () => {
-		console.error('Google login failed');
+		setCustomError('Google registration failed. Please try again.');
 	};
 
 	return (
@@ -175,14 +178,16 @@ export default function SignUpPage() {
 								)}
 							/>
 						</div>
-						{(error || googleError) && (
+						{(error || googleError || customError) && (
 							<div className="basis-full mb-4">
 								<Alert severity="error">
-									{error && 'data' in error
-										? (error.data as { message?: string })?.message || 'An error occurred'
-										: googleError && 'data' in googleError
-											? (googleError.data as { message?: string })?.message || 'Google login failed'
-											: 'An error occurred'}
+									{customError ||
+										(error && 'data' in error
+											? (error.data as { message?: string })?.message || 'An error occurred'
+											: googleError && 'data' in googleError
+												? (googleError.data as { message?: string })?.message ||
+													'Google registration failed'
+												: 'An error occurred')}
 								</Alert>
 							</div>
 						)}
