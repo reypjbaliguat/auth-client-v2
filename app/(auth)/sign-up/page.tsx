@@ -192,7 +192,7 @@ export default function SignUpPage() {
 							</div>
 						)}
 						<Button loading={isSubmitting || isLoading} fullWidth variant="contained" type="submit">
-							Login
+							Register
 						</Button>
 					</Box>
 

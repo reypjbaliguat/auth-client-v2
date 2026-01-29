@@ -1,12 +1,12 @@
 'use client';
 
 import { useVerifyOtpMutation } from '@/core/store/api/authApi';
-import { resetOtpStep, setAuthenticated } from '@/core/store/features/auth';
+import { resetOtpStep, setAuthenticated, setOtpStep } from '@/core/store/features/auth';
 import { useAppDispatch } from '@/core/store/hooks';
 import { Alert, Button } from '@mui/material';
 import Cookies from 'js-cookie';
 import { MuiOtpInput } from 'mui-one-time-password-input';
-import { useRouter } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useState } from 'react';
 
 interface Props {
@@ -17,7 +17,14 @@ function OtpForm({ email }: Props) {
 	const [error, setError] = useState<string>('');
 	const dispatch = useAppDispatch();
 	const router = useRouter();
+	const pathname = usePathname();
 	const [verifyOtp, { isLoading }] = useVerifyOtpMutation();
+
+	const handleBack = () => {
+		// Determine which step to go back to based on current route
+		const backStep = pathname.includes('sign-up') ? 'Register' : 'Login';
+		dispatch(setOtpStep({ step: backStep }));
+	};
 	const handleChange = (newValue: string) => {
 		setOtp(newValue);
 		setError(''); // Clear error when user types
@@ -82,9 +89,14 @@ function OtpForm({ email }: Props) {
 		<div className="flex flex-col gap-y-4">
 			<MuiOtpInput value={otp} length={6} display={'flex'} gap={'5px'} onChange={handleChange} />
 			{error && <Alert severity="error">{error}</Alert>}
-			<Button loading={isLoading} variant="contained" color="primary" onClick={handleSubmit}>
-				Verify OTP
-			</Button>
+			<div className="flex flex-col gap-y-2">
+				<Button loading={isLoading} variant="contained" color="primary" onClick={handleSubmit}>
+					Verify OTP
+				</Button>
+				<Button variant="outlined" onClick={handleBack} disabled={isLoading}>
+					Back to {pathname.includes('sign-up') ? 'Register' : 'Login'}
+				</Button>
+			</div>
 		</div>
 	);
 }
