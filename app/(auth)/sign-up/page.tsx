@@ -1,22 +1,30 @@
 'use client';
 
 import { useGoogleLoginMutation, useRegisterMutation } from '@/core/store/api/authApi';
-import { selectIsAuthenticated, setAuthenticated } from '@/core/store/features/auth';
+import {
+	resetOtpStep,
+	selectIsAuthenticated,
+	selectOtpEmail,
+	selectOtpStep,
+	setAuthenticated,
+	setOtpStep,
+} from '@/core/store/features/auth';
 import { useAppDispatch, useAppSelector } from '@/core/store/hooks';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Alert, Box, Button, Divider, TextField } from '@mui/material';
 import { GoogleLogin } from '@react-oauth/google';
 import Cookies from 'js-cookie';
 import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { AuthFormContainer, OtpForm } from '../components';
 import schema, { SignUpFormData } from './schema';
 
 export default function SignUpPage() {
-	const [step, setStep] = useState<'Register' | 'OTP Verification'>('Register');
 	const dispatch = useAppDispatch();
 	const isAuthenticated = useAppSelector(selectIsAuthenticated);
+	const step = useAppSelector(selectOtpStep);
+	const persistedEmail = useAppSelector(selectOtpEmail);
 
 	const router = useRouter();
 	const {
@@ -30,20 +38,29 @@ export default function SignUpPage() {
 	const [register, { isLoading, error }] = useRegisterMutation();
 	const [googleLogin, { isLoading: isGoogleLoading, error: googleError }] =
 		useGoogleLoginMutation();
-	console.log(error);
+
+	// Set Register step when component mounts (if not already in OTP verification)
+	useEffect(() => {
+		if (step !== 'OTP Verification') {
+			dispatch(setOtpStep({ step: 'Register' }));
+		}
+	}, [dispatch, step]);
+
 	// Redirect if already authenticated
 	useEffect(() => {
 		if (isAuthenticated) {
+			// Reset OTP step when authenticated
+			dispatch(resetOtpStep());
 			router.push('/dashboard');
 		}
-	}, [isAuthenticated, router]);
+	}, [isAuthenticated, router, dispatch]);
 
 	//to be updated
 	const onRequestOtp = async (formData: SignUpFormData) => {
 		try {
 			const payload = await register(formData).unwrap();
 			if (payload.message.includes('OTP sent')) {
-				setStep('OTP Verification');
+				dispatch(setOtpStep({ step: 'OTP Verification', email: formData.email }));
 			}
 		} catch (err) {
 			console.error(err);
@@ -87,6 +104,9 @@ export default function SignUpPage() {
 				})
 			);
 
+			// Reset OTP step on successful authentication
+			dispatch(resetOtpStep());
+
 			// Redirect to dashboard
 			router.replace('/dashboard');
 		} catch (error) {
@@ -99,7 +119,7 @@ export default function SignUpPage() {
 	};
 
 	return (
-		<AuthFormContainer label={step}>
+		<AuthFormContainer label={step === 'Register' ? 'Register' : step}>
 			{step === 'Register' ? (
 				<>
 					<Box component="form" onSubmit={handleSubmit(onRequestOtp)}>
@@ -185,7 +205,7 @@ export default function SignUpPage() {
 					</div>
 				</>
 			) : (
-				<OtpForm email={getValues('email')} />
+				<OtpForm email={persistedEmail || getValues('email')} />
 			)}
 		</AuthFormContainer>
 	);

@@ -1,7 +1,7 @@
 'use client';
 
 import { useVerifyOtpMutation } from '@/core/store/api/authApi';
-import { setAuthenticated } from '@/core/store/features/auth';
+import { resetOtpStep, setAuthenticated } from '@/core/store/features/auth';
 import { useAppDispatch } from '@/core/store/hooks';
 import { Button } from '@mui/material';
 import Cookies from 'js-cookie';
@@ -65,6 +65,9 @@ function OtpForm({ email }: Props) {
 					user: response.user || null,
 				})
 			);
+
+			// Reset OTP step on successful verification
+			dispatch(resetOtpStep());
 
 			// Redirect to dashboard
 			router.replace('/dashboard'); // Use replace to prevent back navigation to OTP

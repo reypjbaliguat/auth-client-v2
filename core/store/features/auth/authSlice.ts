@@ -5,12 +5,16 @@ export interface AuthState {
 	isAuthenticated: boolean;
 	loading: boolean;
 	user: User | null;
+	otpStep: 'Register' | 'Login' | 'OTP Verification';
+	otpEmail: string | null;
 }
 
 const initialState: AuthState = {
 	isAuthenticated: false,
 	loading: false, // Changed to false to prevent hydration mismatches
 	user: null,
+	otpStep: 'Login',
+	otpEmail: null,
 };
 
 const authSlice = createSlice({
@@ -33,10 +37,29 @@ const authSlice = createSlice({
 		finishAuthCheck(state) {
 			state.loading = false;
 		},
+		setOtpStep(
+			state,
+			action: PayloadAction<{ step: 'Login' | 'Register' | 'OTP Verification'; email?: string }>
+		) {
+			state.otpStep = action.payload.step;
+			if (action.payload.email) {
+				state.otpEmail = action.payload.email;
+			}
+		},
+		resetOtpStep(state) {
+			state.otpStep = 'Register';
+			state.otpEmail = null;
+		},
 	},
 });
 
-export const { setAuthenticated, setUnauthenticated, startAuthCheck, finishAuthCheck } =
-	authSlice.actions;
+export const {
+	setAuthenticated,
+	setUnauthenticated,
+	startAuthCheck,
+	finishAuthCheck,
+	setOtpStep,
+	resetOtpStep,
+} = authSlice.actions;
 
 export default authSlice.reducer;

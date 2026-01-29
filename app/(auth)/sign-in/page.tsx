@@ -1,23 +1,31 @@
 'use client';
 
 import { useGoogleLoginMutation, useLoginMutation } from '@/core/store/api/authApi';
-import { selectIsAuthenticated, setAuthenticated } from '@/core/store/features/auth';
+import {
+	resetOtpStep,
+	selectIsAuthenticated,
+	selectOtpEmail,
+	selectOtpStep,
+	setAuthenticated,
+	setOtpStep,
+} from '@/core/store/features/auth';
 import { useAppDispatch, useAppSelector } from '@/core/store/hooks';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Alert, Box, Button, Divider, TextField } from '@mui/material';
 import { GoogleLogin } from '@react-oauth/google';
 import Cookies from 'js-cookie';
 import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { AuthFormContainer, OtpForm } from '../components';
 import schema, { SignInFormData } from './schema';
 
 export default function SignInPage() {
-	const [step, setStep] = useState<'Login' | 'OTP Verification'>('Login');
 	const dispatch = useAppDispatch();
 	const isAuthenticated = useAppSelector(selectIsAuthenticated);
-
+	const step = useAppSelector(selectOtpStep);
+	const persistedEmail = useAppSelector(selectOtpEmail);
+	console.log(step);
 	const router = useRouter();
 	const {
 		handleSubmit,
@@ -31,19 +39,28 @@ export default function SignInPage() {
 	const [googleLogin, { isLoading: isGoogleLoading, error: googleError }] =
 		useGoogleLoginMutation();
 
+	// Set Register step when component mounts (if not already in OTP verification)
+	useEffect(() => {
+		if (step !== 'OTP Verification') {
+			dispatch(setOtpStep({ step: 'Login' }));
+		}
+	}, [dispatch, step]);
+
 	// Redirect if already authenticated
 	useEffect(() => {
 		if (isAuthenticated) {
+			// Reset OTP step when authenticated
+			dispatch(resetOtpStep());
 			router.push('/dashboard');
 		}
-	}, [isAuthenticated, router]);
+	}, [isAuthenticated, router, dispatch]);
 
 	//to be updated
 	const onRequestOtp = async (formData: SignInFormData) => {
 		try {
 			const payload = await login(formData).unwrap();
 			if (payload.message.includes('OTP sent')) {
-				setStep('OTP Verification');
+				dispatch(setOtpStep({ step: 'OTP Verification', email: formData.email }));
 			}
 		} catch (err) {
 			console.error(err);
@@ -87,6 +104,9 @@ export default function SignInPage() {
 				})
 			);
 
+			// Reset OTP step on successful authentication
+			dispatch(resetOtpStep());
+
 			// Redirect to dashboard
 			router.replace('/dashboard');
 		} catch (error) {
@@ -99,7 +119,7 @@ export default function SignInPage() {
 	};
 
 	return (
-		<AuthFormContainer label={step}>
+		<AuthFormContainer label={step === 'Login' ? 'Login' : step}>
 			{step === 'Login' ? (
 				<>
 					<Box component="form" onSubmit={handleSubmit(onRequestOtp)}>
@@ -169,7 +189,7 @@ export default function SignInPage() {
 					</div>
 				</>
 			) : (
-				<OtpForm email={getValues('email')} />
+				<OtpForm email={persistedEmail || getValues('email')} />
 			)}
 		</AuthFormContainer>
 	);
