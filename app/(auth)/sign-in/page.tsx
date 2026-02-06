@@ -26,7 +26,6 @@ export default function SignInPage() {
 	const step = useAppSelector(selectOtpStep);
 	const persistedEmail = useAppSelector(selectOtpEmail);
 	const [customError, setCustomError] = useState<string>('');
-	console.log(step);
 	const router = useRouter();
 	const {
 		handleSubmit,
