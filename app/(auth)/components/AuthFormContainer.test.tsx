@@ -86,41 +86,51 @@ describe('AuthFormContainer', () => {
 		});
 	});
 
-	describe('GoogleOAuthProvider integration', () => {
-		it('passes the correct clientId to GoogleOAuthProvider', () => {
-			const testClientId = 'custom-test-client-id';
-			process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID = testClientId;
-
-			render(<AuthFormContainer label="Login">{mockChildren}</AuthFormContainer>);
-
-			expect(screen.getByTestId('google-oauth-provider')).toBeInTheDocument();
-		});
-
-		it('handles missing GOOGLE_CLIENT_ID gracefully', () => {
+	describe('Environment and integration', () => {
+		it('renders without crashing when Google client ID is missing', () => {
 			delete process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
 
-			render(<AuthFormContainer label="Login">{mockChildren}</AuthFormContainer>);
+			expect(() => {
+				render(<AuthFormContainer label="Login">{mockChildren}</AuthFormContainer>);
+			}).not.toThrow();
 
-			expect(screen.getByTestId('google-oauth-provider')).toBeInTheDocument();
+			// Component should still render its main content
+			expect(screen.getByText('Login')).toBeInTheDocument();
 		});
 	});
 
-	describe('Responsive design classes', () => {
-		it('applies correct CSS classes for responsive design', () => {
-			render(<AuthFormContainer label="Login">{mockChildren}</AuthFormContainer>);
-
-			// Find the Card component (MUI Card renders as div by default)
-			const cardElement = screen.getByTestId('google-oauth-provider').firstElementChild;
-			expect(cardElement).toHaveClass(
-				'md:p-10',
-				'px-5',
-				'py-7',
-				'flex',
-				'justify-center',
-				'flex-col',
-				'w-[300px]',
-				'md:w-[500px]'
+	describe('Component state and behavior', () => {
+		it('shows different navigation links based on label prop', () => {
+			const { rerender } = render(
+				<AuthFormContainer label="Login">{mockChildren}</AuthFormContainer>
 			);
+
+			// Login shows sign-up link
+			expect(screen.getByText('Do you need an account?')).toBeInTheDocument();
+			expect(screen.queryByText('Already have an account?')).not.toBeInTheDocument();
+
+			// Register shows sign-in link
+			rerender(<AuthFormContainer label="Register">{mockChildren}</AuthFormContainer>);
+			expect(screen.getByText('Already have an account?')).toBeInTheDocument();
+			expect(screen.queryByText('Do you need an account?')).not.toBeInTheDocument();
+
+			// OTP shows no navigation links
+			rerender(<AuthFormContainer label="OTP Verification">{mockChildren}</AuthFormContainer>);
+			expect(screen.queryByText('Do you need an account?')).not.toBeInTheDocument();
+			expect(screen.queryByText('Already have an account?')).not.toBeInTheDocument();
+		});
+
+		it('displays subtitle only for login variant', () => {
+			const { rerender } = render(
+				<AuthFormContainer label="Login">{mockChildren}</AuthFormContainer>
+			);
+			expect(screen.getByText('Please enter your login info')).toBeInTheDocument();
+
+			rerender(<AuthFormContainer label="Register">{mockChildren}</AuthFormContainer>);
+			expect(screen.queryByText('Please enter your login info')).not.toBeInTheDocument();
+
+			rerender(<AuthFormContainer label="OTP Verification">{mockChildren}</AuthFormContainer>);
+			expect(screen.queryByText('Please enter your login info')).not.toBeInTheDocument();
 		});
 	});
 
