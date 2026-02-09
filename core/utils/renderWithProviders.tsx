@@ -12,14 +12,12 @@ type PartialRootState = Partial<RootState> & {
 
 export function renderWithProviders(ui: ReactElement, preloadedState?: PartialRootState) {
 	const store = configureStore({
-		reducer: {
-			...persistedReducer,
-		},
-		preloadedState: {
-			...preloadedState,
-		},
+		reducer: persistedReducer,
+		preloadedState: preloadedState as RootState,
 		middleware: (getDefaultMiddleware) =>
-			getDefaultMiddleware({ serializableCheck: false }).concat(rootMiddleware),
+			getDefaultMiddleware({
+				serializableCheck: false,
+			}).concat(...rootMiddleware),
 		devTools: process.env.NODE_ENV !== 'production',
 	});
 

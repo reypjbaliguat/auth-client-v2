@@ -2,10 +2,13 @@ import * as z from 'zod';
 
 const schema = z.object({
 	email: z
-		.email()
-		.min(1, { message: 'This field is required.' })
-		.max(124, 'Email must only have maximum of 124 characters'),
-	password: z.string().min(1, { message: 'This field is required.' }),
+		.string()
+		.trim()
+		.toLowerCase()
+		.min(1, 'Email is required')
+		.max(124, 'Email must only have maximum of 124 characters')
+		.email('Invalid email format'),
+	password: z.string().min(1, { message: 'Password is required.' }),
 });
 
 export default schema;

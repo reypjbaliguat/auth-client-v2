@@ -33,7 +33,10 @@ export default function SignInPage() {
 		formState: { isSubmitting },
 		getValues,
 		//to be updated
-	} = useForm<SignInFormData>({ resolver: zodResolver(schema) });
+	} = useForm<SignInFormData>({
+		resolver: zodResolver(schema),
+		defaultValues: { email: '', password: '' },
+	});
 
 	const [login, { isLoading, error }] = useLoginMutation();
 	const [googleLogin, { isLoading: isGoogleLoading, error: googleError }] =
@@ -58,6 +61,7 @@ export default function SignInPage() {
 	//to be updated
 	const onRequestOtp = async (formData: SignInFormData) => {
 		setCustomError(''); // Clear any existing errors
+
 		try {
 			const payload = await login(formData).unwrap();
 			if (payload.message.includes('OTP sent')) {
@@ -120,6 +124,12 @@ export default function SignInPage() {
 		setCustomError('Google login failed. Please try again.');
 	};
 
+	const longEmail = 'a'.repeat(120) + '@example.com'; // Over 124 chars
+	const data = { email: longEmail, password: 'password' };
+
+	const result = schema.safeParse(data);
+	console.log(result);
+
 	return (
 		<AuthFormContainer label={step === 'Login' ? 'Login' : step}>
 			{step === 'Login' ? (
@@ -129,7 +139,6 @@ export default function SignInPage() {
 							<Controller
 								name="email"
 								control={control}
-								rules={{ required: 'Email is required' }}
 								render={({ field, fieldState: { error } }) => (
 									<TextField
 										{...field}
@@ -146,7 +155,6 @@ export default function SignInPage() {
 							<Controller
 								name="password"
 								control={control}
-								rules={{ required: 'Password is required' }}
 								render={({ field, fieldState: { error } }) => (
 									<TextField
 										{...field}
@@ -174,7 +182,13 @@ export default function SignInPage() {
 								</Alert>
 							</div>
 						)}
-						<Button loading={isSubmitting || isLoading} fullWidth variant="contained" type="submit">
+						<Button
+							data-testid="login-button"
+							loading={isSubmitting || isLoading}
+							fullWidth
+							variant="contained"
+							type="submit"
+						>
 							Login
 						</Button>
 					</Box>

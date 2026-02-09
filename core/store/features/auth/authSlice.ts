@@ -5,7 +5,7 @@ export interface AuthState {
 	isAuthenticated: boolean;
 	loading: boolean;
 	user: User | null;
-	otpStep: 'Register' | 'Login' | 'OTP Verification';
+	step: 'Register' | 'Login' | 'OTP Verification';
 	otpEmail: string | null;
 }
 
@@ -13,7 +13,7 @@ const initialState: AuthState = {
 	isAuthenticated: false,
 	loading: false, // Changed to false to prevent hydration mismatches
 	user: null,
-	otpStep: 'Login',
+	step: 'Login',
 	otpEmail: null,
 };
 
@@ -41,13 +41,13 @@ const authSlice = createSlice({
 			state,
 			action: PayloadAction<{ step: 'Login' | 'Register' | 'OTP Verification'; email?: string }>
 		) {
-			state.otpStep = action.payload.step;
+			state.step = action.payload.step;
 			if (action.payload.email) {
 				state.otpEmail = action.payload.email;
 			}
 		},
 		resetOtpStep(state) {
-			state.otpStep = 'Register';
+			state.step = 'Register';
 			state.otpEmail = null;
 		},
 	},
