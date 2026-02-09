@@ -124,12 +124,6 @@ export default function SignInPage() {
 		setCustomError('Google login failed. Please try again.');
 	};
 
-	const longEmail = 'a'.repeat(120) + '@example.com'; // Over 124 chars
-	const data = { email: longEmail, password: 'password' };
-
-	const result = schema.safeParse(data);
-	console.log(result);
-
 	return (
 		<AuthFormContainer label={step === 'Login' ? 'Login' : step}>
 			{step === 'Login' ? (
