@@ -26,6 +26,21 @@ interface GoogleLoginResponse {
 	user: User;
 }
 
+interface ResendOtpRequest {
+	email: string;
+}
+
+interface ResendOtpResponse {
+	message: string;
+	canResendAt: number; // Unix timestamp when user can resend again
+}
+
+interface OtpStatusResponse {
+	canResend: boolean;
+	remainingTime?: number; // Seconds until can resend
+	canResendAt?: number; // Unix timestamp when user can resend again
+}
+
 export const authApi = baseApi.injectEndpoints({
 	endpoints: (builder) => ({
 		login: builder.mutation<LoginResponse, LoginRequest>({
@@ -83,6 +98,23 @@ export const authApi = baseApi.injectEndpoints({
 			}),
 			invalidatesTags: ['Auth'],
 		}),
+		// Resend OTP with rate limiting
+		resendOtp: builder.mutation<ResendOtpResponse, ResendOtpRequest>({
+			query: ({ email }) => ({
+				url: 'auth/resend-otp',
+				method: 'POST',
+				body: { email },
+			}),
+			invalidatesTags: ['Auth'],
+		}),
+		// Get OTP status and remaining time
+		getOtpStatus: builder.query<OtpStatusResponse, { email: string }>({
+			query: ({ email }) => ({
+				url: `auth/otp-status/${encodeURIComponent(email)}`,
+				method: 'GET',
+			}),
+			providesTags: ['Auth'],
+		}),
 	}),
 });
 
@@ -94,4 +126,6 @@ export const {
 	useGoogleLoginMutation,
 	useRefreshTokenMutation,
 	useRegisterMutation,
+	useResendOtpMutation,
+	useGetOtpStatusQuery,
 } = authApi;

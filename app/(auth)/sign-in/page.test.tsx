@@ -70,6 +70,11 @@ describe('SignInPage - User Flows', () => {
 				step: 'Login',
 				otpEmail: '',
 				user: null,
+				otpTimer: {
+					canResend: true,
+					remainingTime: 0,
+					canResendAt: null,
+				},
 				loading: false,
 				...authState,
 			},
