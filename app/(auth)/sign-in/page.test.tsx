@@ -19,10 +19,13 @@ vi.mock('js-cookie');
 const mockLogin = vi.fn();
 const mockGoogleLogin = vi.fn();
 const mockVerifyOtp = vi.fn();
+const mockResendOtp = vi.fn();
 vi.mock('@/core/store/api/authApi', () => ({
 	useLoginMutation: () => [mockLogin, { isLoading: false, error: null }],
 	useGoogleLoginMutation: () => [mockGoogleLogin, { isLoading: false, error: null }],
 	useVerifyOtpMutation: () => [mockVerifyOtp, { isLoading: false, error: null }],
+	useResendOtpMutation: () => [mockResendOtp, { isLoading: false, error: null }],
+	useGetOtpStatusQuery: () => ({ data: null, isLoading: false, error: null }),
 }));
 
 // Simple Google Login mock
@@ -34,15 +37,15 @@ vi.mock('@react-oauth/google', () => {
 	return {
 		GoogleOAuthProvider: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
 		GoogleLogin: ({ onSuccess, onError }: GoogleLoginProps) => (
-			<div>
+			<div data-testid="google-login-component">
 				<button
 					data-testid="google-success"
 					onClick={() => onSuccess({ credential: 'mock-token' })}
 				>
-					Google Login
+					Sign in with Google
 				</button>
 				<button data-testid="google-error" onClick={onError}>
-					Google Error
+					Google Login Error
 				</button>
 			</div>
 		),
@@ -61,6 +64,7 @@ describe('SignInPage - User Flows', () => {
 		mockLogin.mockReturnValue({ unwrap: vi.fn() });
 		mockGoogleLogin.mockReturnValue({ unwrap: vi.fn() });
 		mockVerifyOtp.mockReturnValue({ unwrap: vi.fn() });
+		mockResendOtp.mockReturnValue({ unwrap: vi.fn() });
 	});
 
 	const renderSignInPage = (authState = {}) => {
@@ -200,7 +204,7 @@ describe('SignInPage - User Flows', () => {
 
 	describe('OTP Flow', () => {
 		it('shows OTP form after successful login', () => {
-			renderSignInPage({ step: 'OTP Verification', email: 'user@example.com' });
+			renderSignInPage({ step: 'OTP Verification', otpEmail: 'user@example.com' });
 
 			expect(screen.getByText(/otp verification/i)).toBeInTheDocument();
 			expect(screen.queryByLabelText(/email/i)).not.toBeInTheDocument();

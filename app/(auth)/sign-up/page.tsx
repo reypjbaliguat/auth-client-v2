@@ -34,7 +34,14 @@ export default function SignUpPage() {
 		formState: { isSubmitting },
 		getValues,
 		//to be updated
-	} = useForm<SignUpFormData>({ resolver: zodResolver(schema) });
+	} = useForm<SignUpFormData>({
+		resolver: zodResolver(schema),
+		defaultValues: {
+			email: '',
+			password: '',
+			confirmPassword: '',
+		},
+	});
 
 	const [register, { isLoading, error }] = useRegisterMutation();
 	const [googleLogin, { isLoading: isGoogleLoading, error: googleError }] =
@@ -191,7 +198,13 @@ export default function SignUpPage() {
 								</Alert>
 							</div>
 						)}
-						<Button loading={isSubmitting || isLoading} fullWidth variant="contained" type="submit">
+						<Button
+							disabled={isSubmitting || isLoading}
+							loading={isSubmitting || isLoading}
+							fullWidth
+							variant="contained"
+							type="submit"
+						>
 							Register
 						</Button>
 					</Box>

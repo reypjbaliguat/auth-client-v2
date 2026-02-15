@@ -12,12 +12,13 @@ vi.mock('next/navigation', () => ({
 }));
 
 // Mock API endpoints
+const mockVerifyOtp = vi.fn();
+const mockResendOtp = vi.fn();
+const mockGetOtpStatus = vi.fn();
 vi.mock('@/core/store/api/authApi', () => ({
-	useVerifyOtpMutation: vi.fn(() => [vi.fn(), { isLoading: false }]),
-	useResendOtpMutation: vi.fn(() => [vi.fn(), { isLoading: false }]),
-	useGetOtpStatusQuery: vi.fn(() => ({
-		data: { canResend: true, remainingTime: 0, canResendAt: null },
-	})),
+	useVerifyOtpMutation: () => [mockVerifyOtp, { isLoading: false }],
+	useResendOtpMutation: () => [mockResendOtp, { isLoading: false }],
+	useGetOtpStatusQuery: () => mockGetOtpStatus(),
 }));
 
 // Mock environment variable for baseURL
@@ -28,6 +29,12 @@ describe('OtpForm', () => {
 
 	beforeEach(() => {
 		vi.clearAllMocks();
+		mockVerifyOtp.mockReturnValue({ unwrap: vi.fn() });
+		mockResendOtp.mockReturnValue({ unwrap: vi.fn() });
+		// Default API response - can be overridden in individual tests
+		mockGetOtpStatus.mockReturnValue({
+			data: { canResend: true, remainingTime: 0, canResendAt: null },
+		});
 	});
 	afterEach(() => {
 		vi.resetAllMocks();
@@ -61,6 +68,15 @@ describe('OtpForm', () => {
 	});
 
 	it('shows timer when OTP cannot be resent', () => {
+		// Mock API to return timer state
+		mockGetOtpStatus.mockReturnValue({
+			data: {
+				canResend: false,
+				remainingTime: 120,
+				canResendAt: Math.floor(Date.now() / 1000) + 120,
+			},
+		});
+
 		act(() => {
 			renderOtpForm({
 				otpTimer: {
