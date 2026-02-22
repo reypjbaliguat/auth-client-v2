@@ -4,7 +4,6 @@ import Cookies from 'js-cookie';
 
 const baseQuery = fetchBaseQuery({
 	baseUrl: process.env.NEXT_PUBLIC_API_URL,
-	credentials: 'include', // Include cookies in requests
 	prepareHeaders: (headers, { arg }) => {
 		// Get auth token from secure cookie
 		const token = Cookies.get('token');
