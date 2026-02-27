@@ -26,6 +26,7 @@ export default function SignUpPage() {
 	const step = useAppSelector(selectOtpStep);
 	const persistedEmail = useAppSelector(selectOtpEmail);
 	const [customError, setCustomError] = useState<string>('');
+	const [customSuccess, setCustomSuccess] = useState<string>('');
 
 	const router = useRouter();
 	const {
@@ -68,6 +69,15 @@ export default function SignUpPage() {
 		setCustomError(''); // Clear any existing errors
 		try {
 			const payload = await register(formData).unwrap();
+			console.log(payload);
+			if (payload.message.includes('existing account')) {
+				setCustomSuccess(payload.message);
+				// wait for 2 seconds before redirecting to login page
+				setTimeout(() => {
+					router.push('/sign-in');
+				}, 2000);
+				return;
+			}
 			if (payload.message.includes('OTP sent')) {
 				dispatch(setOtpStep({ step: 'OTP Verification', email: formData.email }));
 			}
@@ -198,6 +208,12 @@ export default function SignUpPage() {
 								</Alert>
 							</div>
 						)}
+						{customSuccess && (
+							<div className="basis-full mb-4">
+								<Alert severity="success">{customSuccess}</Alert>
+							</div>
+						)}
+
 						<Button
 							disabled={isSubmitting || isLoading}
 							loading={isSubmitting || isLoading}
