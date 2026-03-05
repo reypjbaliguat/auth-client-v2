@@ -6,6 +6,8 @@ export interface AuthState {
 	loading: boolean;
 	user: User | null;
 	step: 'Register' | 'Login' | 'OTP Verification';
+	forgotPasswordEmail: string | null;
+	forgotPasswordStep: 'Request' | 'Verify';
 	otpEmail: string | null;
 	otpTimer: {
 		canResend: boolean;
@@ -19,6 +21,8 @@ const initialState: AuthState = {
 	loading: false, // Changed to false to prevent hydration mismatches
 	user: null,
 	step: 'Login',
+	forgotPasswordEmail: null,
+	forgotPasswordStep: 'Request',
 	otpEmail: null,
 	otpTimer: {
 		canResend: true,
@@ -65,6 +69,15 @@ const authSlice = createSlice({
 				canResendAt: null,
 			};
 		},
+		setForgotPasswordStep(
+			state,
+			action: PayloadAction<{ step: 'Request' | 'Verify'; email?: string | null }>
+		) {
+			state.forgotPasswordStep = action.payload.step;
+			if (action.payload.email) {
+				state.forgotPasswordEmail = action.payload.email;
+			}
+		},
 		// Set OTP timer state from server
 		setOtpTimer(
 			state,
@@ -101,6 +114,7 @@ export const {
 	resetOtpStep,
 	setOtpTimer,
 	updateOtpTimer,
+	setForgotPasswordStep,
 } = authSlice.actions;
 
 export default authSlice.reducer;

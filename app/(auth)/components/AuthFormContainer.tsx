@@ -20,9 +20,14 @@ function AuthFormContainer({ label, children }: Props) {
 				{isLogin && <span className="text-lg">Please enter your login info</span>}
 				{children}
 				{isLogin ? (
-					<Link href={`/sign-up`} className="mx-auto mt-5 text-blue-500">
-						Do you need an account?
-					</Link>
+					<div className="flex flex-col">
+						<Link href={`/sign-up`} className="mx-auto mt-5 text-blue-500">
+							Do you need an account?
+						</Link>
+						<Link href={`/forgot-password`} className="mx-auto mt-5 text-blue-500">
+							Forgot your password?
+						</Link>
+					</div>
 				) : isOtp ? (
 					<></>
 				) : (

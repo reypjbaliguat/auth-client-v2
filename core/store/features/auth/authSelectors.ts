@@ -9,3 +9,5 @@ export const selectOtpEmail = (state: RootState) => state.auth.otpEmail;
 export const selectOtpTimer = (state: RootState) => state.auth.otpTimer;
 export const selectCanResendOtp = (state: RootState) => state.auth.otpTimer.canResend;
 export const selectOtpRemainingTime = (state: RootState) => state.auth.otpTimer.remainingTime;
+export const selectForgotPasswordEmail = (state: RootState) => state.auth.forgotPasswordEmail;
+export const selectForgotPasswordStep = (state: RootState) => state.auth.forgotPasswordStep;
