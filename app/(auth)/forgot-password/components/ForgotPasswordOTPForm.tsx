@@ -46,7 +46,7 @@ const ForgotPasswordOTPForm = ({ email }: { email?: string | null }) => {
 			// e.g., dispatch(resendResetPasswordOtp({ email }))
 			setResendSuccess('OTP sent successfully!');
 			setTimeout(() => setResendSuccess(''), 5000);
-		} catch (error) {
+		} catch {
 			setError('Failed to resend OTP. Please try again.');
 		}
 	};
@@ -59,7 +59,7 @@ const ForgotPasswordOTPForm = ({ email }: { email?: string | null }) => {
 			console.log('Reset Password Response:', res);
 			// Handle success, e.g., navigate to login page
 			router.push('/sign-in');
-		} catch (error) {
+		} catch {
 			setError('Failed to reset password. Please try again.');
 		}
 	};

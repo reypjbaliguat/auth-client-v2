@@ -1,12 +1,8 @@
 'use client';
 
 import { useForgotPasswordMutation } from '@/core/store/api/authApi';
-import {
-	selectForgotPasswordEmail,
-	selectForgotPasswordStep,
-} from '@/core/store/features/auth/authSelectors';
 import { setForgotPasswordStep } from '@/core/store/features/auth/authSlice';
-import { useAppDispatch, useAppSelector } from '@/core/store/hooks';
+import { useAppDispatch } from '@/core/store/hooks';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Alert, Box, Button, TextField } from '@mui/material';
 import Image from 'next/image';
@@ -17,8 +13,7 @@ import schema, { RequestResetPasswordFormData } from '../schema';
 function ForgotPasswordEmailForm() {
 	const dispatch = useAppDispatch();
 	const router = useRouter();
-	const forgotPasswordStep = useAppSelector(selectForgotPasswordStep);
-	const forgotPasswordEmail = useAppSelector(selectForgotPasswordEmail);
+
 	const {
 		handleSubmit,
 		control,
@@ -32,7 +27,6 @@ function ForgotPasswordEmailForm() {
 	const [forgotPassword, { isLoading, error }] = useForgotPasswordMutation();
 	const onRequestOtp = async (data: RequestResetPasswordFormData) => {
 		// Implement forgot password logic here, e.g., call the forgotPassword mutation
-		console.log('Forgot Password Request Data:', data);
 		forgotPassword(data)
 			.unwrap()
 			.then(() => {

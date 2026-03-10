@@ -115,7 +115,7 @@ export default function SignInPage() {
 
 			// Redirect to dashboard
 			router.replace('/dashboard');
-		} catch (error) {
+		} catch {
 			setCustomError('Google login failed. Please try again.');
 		}
 	};

@@ -81,7 +81,7 @@ export default function SignUpPage() {
 			if (payload.message.includes('OTP sent')) {
 				dispatch(setOtpStep({ step: 'OTP Verification', email: formData.email }));
 			}
-		} catch (err) {
+		} catch {
 			setCustomError('Registration failed. Please check your details and try again.');
 		}
 	};
@@ -129,7 +129,7 @@ export default function SignUpPage() {
 
 			// Redirect to dashboard
 			router.replace('/dashboard');
-		} catch (error) {
+		} catch {
 			setCustomError('Google registration failed. Please try again.');
 		}
 	};
