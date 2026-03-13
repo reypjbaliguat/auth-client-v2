@@ -18,6 +18,7 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { AuthFormContainer, OtpForm } from '../components';
+import PasswordField from '../components/PasswordField';
 import schema, { SignInFormData } from './schema';
 
 export default function SignInPage() {
@@ -150,16 +151,7 @@ export default function SignInPage() {
 								name="password"
 								control={control}
 								render={({ field, fieldState: { error } }) => (
-									<TextField
-										{...field}
-										label="Password"
-										type="password"
-										variant="outlined"
-										error={!!error}
-										value={field.value || ''}
-										helperText={error ? error.message : null}
-										fullWidth
-									/>
+									<PasswordField field={field} error={error} label="Password" />
 								)}
 							/>
 						</div>
