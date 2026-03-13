@@ -10,7 +10,7 @@ import {
 	setOtpStep,
 } from '@/core/store/features/auth';
 import { useAppDispatch, useAppSelector } from '@/core/store/hooks';
-import { AuthErrorHandler } from '@/core/utils/errorHandler';
+import { handleAsyncOperation } from '@/core/utils/errorHandler';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Alert, Box, Button, Divider, TextField } from '@mui/material';
 import { GoogleLogin } from '@react-oauth/google';
@@ -29,6 +29,7 @@ export default function SignInPage() {
 	const persistedEmail = useAppSelector(selectOtpEmail);
 	const [customError, setCustomError] = useState<string>('');
 	const router = useRouter();
+	const GOOGLE_ERROR_MESSAGE = 'Google login failed. Please try again.';
 	const {
 		handleSubmit,
 		control,
@@ -40,9 +41,8 @@ export default function SignInPage() {
 		defaultValues: { email: '', password: '' },
 	});
 
-	const [login, { isLoading, error }] = useLoginMutation();
-	const [googleLogin, { isLoading: isGoogleLoading, error: googleError }] =
-		useGoogleLoginMutation();
+	const [login, { isLoading }] = useLoginMutation();
+	const [googleLogin, { isLoading: isGoogleLoading }] = useGoogleLoginMutation();
 
 	// Set Login step when component mounts (if not already in OTP verification)
 	useEffect(() => {
@@ -63,31 +63,37 @@ export default function SignInPage() {
 	//to be updated
 	const onRequestOtp = async (formData: SignInFormData) => {
 		setCustomError(''); // Clear any existing errors
-		try {
-			const payload = await login(formData).unwrap();
-			if (payload.message.includes('OTP sent')) {
+		const result = await handleAsyncOperation(
+			() => login(formData).unwrap(),
+			'Login failed. Please try again.'
+		);
+		if (result.success && result.data) {
+			if (result.data.message.includes('OTP sent')) {
 				dispatch(setOtpStep({ step: 'OTP Verification', email: formData.email }));
 			}
-		} catch (error) {
-			const onRequestOTPError = AuthErrorHandler.extractMessage(error);
-			setCustomError(onRequestOTPError);
+		} else {
+			setCustomError(result.error || 'An unexpected error occurred');
 		}
 	};
 
 	const handleGoogleSuccess = async (credentialResponse: { credential?: string }) => {
 		setCustomError(''); // Clear any existing errors
-		try {
-			if (!credentialResponse.credential) {
-				setCustomError('No credential received from Google. Please try again.');
-				return;
-			}
+		if (!credentialResponse.credential) {
+			setCustomError('No credential received from Google. Please try again.');
+			return;
+		}
+		const result = await handleAsyncOperation(
+			() =>
+				googleLogin({
+					credential: credentialResponse.credential!,
+				}).unwrap(),
+			GOOGLE_ERROR_MESSAGE
+		);
 
-			const response = await googleLogin({
-				credential: credentialResponse.credential,
-			}).unwrap();
-
+		if (result.success && result.data) {
+			// Successful login handled in the same way as email/password login
 			// Store tokens in secure cookies
-			Cookies.set('token', response.accessToken, {
+			Cookies.set('token', result.data.accessToken, {
 				secure: process.env.NODE_ENV === 'production',
 				sameSite: 'strict',
 				httpOnly: false,
@@ -95,8 +101,8 @@ export default function SignInPage() {
 				path: '/',
 			});
 
-			if (response.refreshToken) {
-				Cookies.set('refreshToken', response.refreshToken, {
+			if (result.data.refreshToken) {
+				Cookies.set('refreshToken', result.data.refreshToken, {
 					secure: process.env.NODE_ENV === 'production',
 					sameSite: 'strict',
 					httpOnly: false,
@@ -108,7 +114,7 @@ export default function SignInPage() {
 			// Update Redux auth state
 			dispatch(
 				setAuthenticated({
-					user: response.user,
+					user: result.data.user,
 				})
 			);
 
@@ -117,13 +123,13 @@ export default function SignInPage() {
 
 			// Redirect to dashboard
 			router.replace('/dashboard');
-		} catch {
-			setCustomError('Google login failed. Please try again.');
+		} else {
+			setCustomError(result.error || GOOGLE_ERROR_MESSAGE);
 		}
 	};
 
 	const handleGoogleFailure = () => {
-		setCustomError('Google login failed. Please try again.');
+		setCustomError(GOOGLE_ERROR_MESSAGE);
 	};
 
 	return (
@@ -147,7 +153,6 @@ export default function SignInPage() {
 									/>
 								)}
 							/>
-
 							<Controller
 								name="password"
 								control={control}
@@ -156,17 +161,9 @@ export default function SignInPage() {
 								)}
 							/>
 						</div>
-						{(error || googleError || customError) && (
+						{customError && (
 							<div className="basis-full mb-4">
-								<Alert severity="error">
-									{customError ||
-										(error && 'data' in error
-											? (error.data as { message?: string })?.message || 'An error occurred'
-											: googleError && 'data' in googleError
-												? (googleError.data as { message?: string })?.message ||
-													'Google login failed'
-												: 'An error occurred')}
-								</Alert>
+								<Alert severity="error">{customError}</Alert>
 							</div>
 						)}
 						<Button
