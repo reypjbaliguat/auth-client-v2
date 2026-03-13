@@ -10,6 +10,7 @@ import {
 	setOtpStep,
 } from '@/core/store/features/auth';
 import { useAppDispatch, useAppSelector } from '@/core/store/hooks';
+import { AuthErrorHandler } from '@/core/utils/errorHandler';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Alert, Box, Button, Divider, TextField } from '@mui/material';
 import { GoogleLogin } from '@react-oauth/google';
@@ -62,14 +63,14 @@ export default function SignInPage() {
 	//to be updated
 	const onRequestOtp = async (formData: SignInFormData) => {
 		setCustomError(''); // Clear any existing errors
-
 		try {
 			const payload = await login(formData).unwrap();
 			if (payload.message.includes('OTP sent')) {
 				dispatch(setOtpStep({ step: 'OTP Verification', email: formData.email }));
 			}
-		} catch {
-			setCustomError('Login failed. Please check your credentials and try again.');
+		} catch (error) {
+			const onRequestOTPError = AuthErrorHandler.extractMessage(error);
+			setCustomError(onRequestOTPError);
 		}
 	};
 

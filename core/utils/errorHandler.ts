@@ -114,15 +114,15 @@ export class AuthErrorHandler {
 			const { data } = error;
 
 			// Check for specific auth error messages
-			if (data?.message?.includes('invalid credentials')) {
+			if (data?.message?.match(/invalid credentials/i)) {
 				return 'Invalid email or password. Please try again.';
 			}
 
-			if (data?.message?.includes('rate limit')) {
+			if (data?.message?.match(/rate limit/i)) {
 				return 'Too many attempts. Please wait before trying again.';
 			}
 
-			if (data?.message?.includes('invalid otp') || data?.message?.includes('expired')) {
+			if (data?.message?.match(/invalid otp/i) || data?.message?.match(/expired/i)) {
 				return 'Invalid or expired OTP. Please try again.';
 			}
 		}
