@@ -64,6 +64,12 @@ export default function SignUpPage() {
 		}
 	}, [isAuthenticated, router, dispatch]);
 
+	useEffect(() => {
+		return () => {
+			dispatch(resetOtpStep());
+		};
+	}, []);
+
 	//to be updated
 	const onRequestOtp = async (formData: SignUpFormData) => {
 		setCustomError(''); // Clear any existing errors

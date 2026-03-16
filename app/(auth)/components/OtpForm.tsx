@@ -38,7 +38,6 @@ function OtpForm({ email }: Props) {
 	const { data: otpStatus } = useGetOtpStatusQuery(
 		{ email },
 		{
-			pollingInterval: 1000, // Poll every second to keep timer in sync
 			skip: !email,
 		}
 	);

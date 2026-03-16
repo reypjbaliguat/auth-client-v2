@@ -12,14 +12,16 @@ import {
 import { useAppDispatch, useAppSelector } from '@/core/store/hooks';
 import { handleAsyncOperation } from '@/core/utils/errorHandler';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Alert, Box, Button, Divider, TextField } from '@mui/material';
+import { Button, Divider } from '@mui/material';
 import { GoogleLogin } from '@react-oauth/google';
 import Cookies from 'js-cookie';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
-import { AuthFormContainer, OtpForm } from '../components';
-import PasswordField from '../components/PasswordField';
+import { OtpForm } from '../components';
+import AuthForm from '../components/AuthForm';
+import { AuthFormFields } from '../components/AuthFormFields';
 import schema, { SignInFormData } from './schema';
 
 export default function SignInPage() {
@@ -59,6 +61,13 @@ export default function SignInPage() {
 			router.push('/dashboard');
 		}
 	}, [isAuthenticated, router, dispatch]);
+
+	//clean up OTP step on unmount
+	useEffect(() => {
+		return () => {
+			dispatch(resetOtpStep());
+		};
+	}, []);
 
 	//to be updated
 	const onRequestOtp = async (formData: SignInFormData) => {
@@ -131,68 +140,66 @@ export default function SignInPage() {
 	const handleGoogleFailure = () => {
 		setCustomError(GOOGLE_ERROR_MESSAGE);
 	};
-
 	return (
-		<AuthFormContainer label={step === 'Login' ? 'Login' : step}>
-			{step === 'Login' ? (
-				<>
-					<Box component="form" onSubmit={handleSubmit(onRequestOtp)}>
-						<div className="flex flex-col gap-y-2 my-4">
-							<Controller
-								name="email"
-								control={control}
-								render={({ field, fieldState: { error } }) => (
-									<TextField
-										{...field}
-										label="Email"
-										variant="outlined"
-										value={field.value || ''}
-										error={!!error}
-										helperText={error ? error.message : null}
-										fullWidth
-									/>
-								)}
-							/>
-							<Controller
-								name="password"
-								control={control}
-								render={({ field, fieldState: { error } }) => (
-									<PasswordField field={field} error={error} label="Password" />
-								)}
-							/>
-						</div>
-						{customError && (
-							<div className="basis-full mb-4">
-								<Alert severity="error">{customError}</Alert>
-							</div>
-						)}
-						<Button
-							data-testid="login-button"
-							loading={isSubmitting || isLoading}
-							fullWidth
-							variant="contained"
-							type="submit"
-						>
-							Login
-						</Button>
-					</Box>
-
-					<Divider className="text-gray-500 py-4">OR</Divider>
-
-					{/* Google Login Button */}
-					<div className="google-button-container">
-						{isGoogleLoading ? (
-							<Button fullWidth variant="outlined" disabled>
-								Signing in with Google...
+		<AuthForm>
+			<AuthForm.GoogleProvider>
+				<AuthForm.AuthFormImage />
+				<AuthForm.AuthFormHeader header={'Login'} />
+				<AuthForm.AuthFormLabel label={'Please enter your login info'} />
+				{step === 'Login' ? (
+					<>
+						<AuthForm.Form handleSubmit={handleSubmit(onRequestOtp)}>
+							<AuthForm.FormFieldContainer>
+								<Controller
+									name="email"
+									control={control}
+									render={({ field, fieldState: { error } }) => (
+										<AuthFormFields.Email field={field} error={error} />
+									)}
+								/>
+								<Controller
+									name="password"
+									control={control}
+									render={({ field, fieldState: { error } }) => (
+										<AuthFormFields.Password label="Password" field={field} error={error} />
+									)}
+								/>
+							</AuthForm.FormFieldContainer>
+							{customError && <AuthForm.ErrorMessage customError={customError} />}
+							<Button
+								data-testid="login-button"
+								loading={isSubmitting || isLoading}
+								fullWidth
+								variant="contained"
+								type="submit"
+							>
+								Login
 							</Button>
-						) : (
-							<GoogleLogin onSuccess={handleGoogleSuccess} onError={handleGoogleFailure} />
-						)}
-					</div>
-				</>
-			) : (
-				<OtpForm email={persistedEmail || getValues('email')} />
-			)}
-		</AuthFormContainer>
+						</AuthForm.Form>
+						<Divider className="text-gray-500 py-4">OR</Divider>
+						{/* Google Login Button */}
+						<div className="google-button-container">
+							{isGoogleLoading ? (
+								<Button fullWidth variant="outlined" disabled>
+									Signing in with Google...
+								</Button>
+							) : (
+								<GoogleLogin onSuccess={handleGoogleSuccess} onError={handleGoogleFailure} />
+							)}
+						</div>
+						<AuthForm.AuthFooter>
+							<Link href={`/sign-up`} className="mx-auto mt-5 text-blue-500">
+								Do you need an account?
+							</Link>
+							<Link href={`/forgot-password`} className="mx-auto mt-5 text-blue-500">
+								Forgot your password?
+							</Link>
+						</AuthForm.AuthFooter>
+					</>
+				) : (
+					<OtpForm email={persistedEmail || getValues('email')} />
+				)}
+			</AuthForm.GoogleProvider>
+		</AuthForm>
 	);
 }
