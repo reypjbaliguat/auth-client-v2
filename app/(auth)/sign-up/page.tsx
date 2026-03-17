@@ -10,14 +10,18 @@ import {
 	setOtpStep,
 } from '@/core/store/features/auth';
 import { useAppDispatch, useAppSelector } from '@/core/store/hooks';
+import { handleAsyncOperation } from '@/core/utils/errorHandler';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Alert, Box, Button, Divider, TextField } from '@mui/material';
+import { Button, Divider } from '@mui/material';
 import { GoogleLogin } from '@react-oauth/google';
 import Cookies from 'js-cookie';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
-import { AuthFormContainer, OtpForm } from '../components';
+import { OtpForm } from '../components';
+import AuthForm from '../components/AuthForm';
+import { AuthFormFields } from '../components/AuthFormFields';
 import schema, { SignUpFormData } from './schema';
 
 export default function SignUpPage() {
@@ -44,9 +48,10 @@ export default function SignUpPage() {
 		},
 	});
 
-	const [register, { isLoading, error }] = useRegisterMutation();
-	const [googleLogin, { isLoading: isGoogleLoading, error: googleError }] =
-		useGoogleLoginMutation();
+	const [register, { isLoading }] = useRegisterMutation();
+	const [googleLogin, { isLoading: isGoogleLoading }] = useGoogleLoginMutation();
+
+	const GOOGLE_ERROR_MESSAGE = 'Google registration failed. Please try again.';
 
 	// Set Register step when component mounts (if not already in OTP verification)
 	useEffect(() => {
@@ -73,39 +78,46 @@ export default function SignUpPage() {
 	//to be updated
 	const onRequestOtp = async (formData: SignUpFormData) => {
 		setCustomError(''); // Clear any existing errors
-		try {
-			const payload = await register(formData).unwrap();
-			console.log(payload);
-			if (payload.message.includes('existing account')) {
-				setCustomSuccess(payload.message);
-				// wait for 2 seconds before redirecting to login page
-				setTimeout(() => {
-					router.push('/sign-in');
-				}, 2000);
-				return;
-			}
-			if (payload.message.includes('OTP sent')) {
+		const result = await handleAsyncOperation(
+			() => register(formData).unwrap(),
+			'Registration failed. Please check your details and try again.'
+		);
+		if (result.success && result.data) {
+			if (result.data.message.includes('OTP sent')) {
 				dispatch(setOtpStep({ step: 'OTP Verification', email: formData.email }));
 			}
-		} catch {
-			setCustomError('Registration failed. Please check your details and try again.');
+		} else {
+			if (result.error?.includes('Email already exists with password login')) {
+				setCustomSuccess(result.error);
+				// wait for 3 seconds before redirecting to login page
+				setTimeout(() => {
+					router.push('/sign-in');
+				}, 3000);
+				return;
+			} else {
+				setCustomError(result.error || 'An unexpected error occurred');
+			}
 		}
 	};
 
 	const handleGoogleSuccess = async (credentialResponse: { credential?: string }) => {
 		setCustomError(''); // Clear any existing errors
-		try {
-			if (!credentialResponse.credential) {
-				setCustomError('No credential received from Google. Please try again.');
-				return;
-			}
 
-			const response = await googleLogin({
-				credential: credentialResponse.credential,
-			}).unwrap();
+		if (!credentialResponse.credential) {
+			setCustomError('No credential received from Google. Please try again.');
+			return;
+		}
 
-			// Store tokens in secure cookies
-			Cookies.set('token', response.accessToken, {
+		const result = await handleAsyncOperation(
+			() =>
+				googleLogin({
+					credential: credentialResponse.credential!,
+				}).unwrap(),
+			GOOGLE_ERROR_MESSAGE
+		);
+
+		if (result.success && result.data) {
+			Cookies.set('token', result.data.accessToken, {
 				secure: process.env.NODE_ENV === 'production',
 				sameSite: 'strict',
 				httpOnly: false,
@@ -113,8 +125,8 @@ export default function SignUpPage() {
 				path: '/',
 			});
 
-			if (response.refreshToken) {
-				Cookies.set('refreshToken', response.refreshToken, {
+			if (result.data.refreshToken) {
+				Cookies.set('refreshToken', result.data.refreshToken, {
 					secure: process.env.NODE_ENV === 'production',
 					sameSite: 'strict',
 					httpOnly: false,
@@ -126,7 +138,7 @@ export default function SignUpPage() {
 			// Update Redux auth state
 			dispatch(
 				setAuthenticated({
-					user: response.user,
+					user: result.data.user,
 				})
 			);
 
@@ -135,118 +147,85 @@ export default function SignUpPage() {
 
 			// Redirect to dashboard
 			router.replace('/dashboard');
-		} catch {
-			setCustomError('Google registration failed. Please try again.');
+		} else {
+			setCustomError(result.error || GOOGLE_ERROR_MESSAGE);
 		}
 	};
 
 	const handleGoogleFailure = () => {
-		setCustomError('Google registration failed. Please try again.');
+		setCustomError(GOOGLE_ERROR_MESSAGE);
 	};
 
 	return (
-		<AuthFormContainer label={step === 'Register' ? 'Register' : step}>
-			{step === 'Register' ? (
-				<>
-					<Box component="form" onSubmit={handleSubmit(onRequestOtp)}>
-						<div className="flex flex-col gap-y-2 my-4">
-							<Controller
-								name="email"
-								control={control}
-								rules={{ required: 'Email is required' }}
-								render={({ field, fieldState: { error } }) => (
-									<TextField
-										{...field}
-										label="Email"
-										variant="outlined"
-										value={field.value || ''}
-										error={!!error}
-										helperText={error ? error.message : null}
-										fullWidth
-									/>
-								)}
-							/>
-							<Controller
-								name="password"
-								control={control}
-								rules={{ required: 'Password is required' }}
-								render={({ field, fieldState: { error } }) => (
-									<TextField
-										{...field}
-										label="Password"
-										type="password"
-										variant="outlined"
-										error={!!error}
-										value={field.value || ''}
-										helperText={error ? error.message : null}
-										fullWidth
-									/>
-								)}
-							/>
-							<Controller
-								name="confirmPassword"
-								control={control}
-								rules={{ required: 'Confirm Password is required' }}
-								render={({ field, fieldState: { error } }) => (
-									<TextField
-										{...field}
-										label="Confirm Password"
-										type="password"
-										variant="outlined"
-										error={!!error}
-										value={field.value || ''}
-										helperText={error ? error.message : null}
-										fullWidth
-									/>
-								)}
-							/>
-						</div>
-						{(error || googleError || customError) && (
-							<div className="basis-full mb-4">
-								<Alert severity="error">
-									{customError ||
-										(error && 'data' in error
-											? (error.data as { message?: string })?.message || 'An error occurred'
-											: googleError && 'data' in googleError
-												? (googleError.data as { message?: string })?.message ||
-													'Google registration failed'
-												: 'An error occurred')}
-								</Alert>
-							</div>
-						)}
-						{customSuccess && (
-							<div className="basis-full mb-4">
-								<Alert severity="success">{customSuccess}</Alert>
-							</div>
-						)}
-
-						<Button
-							disabled={isSubmitting || isLoading}
-							loading={isSubmitting || isLoading}
-							fullWidth
-							variant="contained"
-							type="submit"
-						>
-							Register
-						</Button>
-					</Box>
-
-					<Divider className="text-gray-500 py-4">OR</Divider>
-
-					{/* Google Login Button */}
-					<div className="google-button-container">
-						{isGoogleLoading ? (
-							<Button fullWidth variant="outlined" disabled>
-								Signing in with Google...
+		<AuthForm>
+			<AuthForm.GoogleProvider>
+				<AuthForm.AuthFormImage />
+				<AuthForm.AuthFormHeader header={'Register'} />
+				<AuthForm.AuthFormLabel label={'Please enter your registration info'} />
+				{step === 'Register' ? (
+					<>
+						<AuthForm.Form handleSubmit={handleSubmit(onRequestOtp)}>
+							<AuthForm.FormFieldContainer>
+								<Controller
+									name="email"
+									control={control}
+									rules={{ required: 'Email is required' }}
+									render={({ field, fieldState: { error } }) => (
+										<AuthFormFields.Email field={field} error={error} />
+									)}
+								/>
+								<Controller
+									name="password"
+									control={control}
+									rules={{ required: 'Password is required' }}
+									render={({ field, fieldState: { error } }) => (
+										<AuthFormFields.Password label="Password" field={field} error={error} />
+									)}
+								/>
+								<Controller
+									name="confirmPassword"
+									control={control}
+									rules={{ required: 'Confirm Password is required' }}
+									render={({ field, fieldState: { error } }) => (
+										<AuthFormFields.Password label="Confirm Password" field={field} error={error} />
+									)}
+								/>
+							</AuthForm.FormFieldContainer>
+							{customError && <AuthForm.ErrorMessage customError={customError} />}
+							{customSuccess && <AuthForm.SuccessMessage customSuccess={customSuccess} />}
+							<Button
+								disabled={isSubmitting || isLoading}
+								loading={isSubmitting || isLoading}
+								fullWidth
+								variant="contained"
+								type="submit"
+							>
+								Register
 							</Button>
-						) : (
-							<GoogleLogin onSuccess={handleGoogleSuccess} onError={handleGoogleFailure} />
-						)}
-					</div>
-				</>
-			) : (
-				<OtpForm email={persistedEmail || getValues('email')} />
-			)}
-		</AuthFormContainer>
+						</AuthForm.Form>
+
+						<Divider className="text-gray-500 py-4">OR</Divider>
+
+						{/* Google Login Button */}
+						<div className="google-button-container">
+							{isGoogleLoading ? (
+								<Button fullWidth variant="outlined" disabled>
+									Signing in with Google...
+								</Button>
+							) : (
+								<GoogleLogin onSuccess={handleGoogleSuccess} onError={handleGoogleFailure} />
+							)}
+						</div>
+						<AuthForm.AuthFooter>
+							<Link href={`/sign-in`} className="mx-auto mt-5 text-blue-500">
+								Already have an account?
+							</Link>
+						</AuthForm.AuthFooter>
+					</>
+				) : (
+					<OtpForm email={persistedEmail || getValues('email')} />
+				)}
+			</AuthForm.GoogleProvider>
+		</AuthForm>
 	);
 }

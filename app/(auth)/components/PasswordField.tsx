@@ -4,21 +4,19 @@ import Visibility from '@mui/icons-material/Visibility';
 import VisibilityOff from '@mui/icons-material/VisibilityOff';
 import { IconButton, InputAdornment, TextField } from '@mui/material';
 import { useState } from 'react';
-import { ControllerRenderProps, FieldError } from 'react-hook-form';
+import { ControllerRenderProps, FieldError, Path } from 'react-hook-form';
 
-interface Props {
-	field: ControllerRenderProps<
-		{
-			email: string;
-			password: string;
-		},
-		'password'
-	>;
+interface Props<T extends Record<string, unknown> & { password: string }> {
+	field: ControllerRenderProps<T, Path<T>>;
 	error: FieldError | undefined;
 	label: 'Password' | 'Confirm Password';
 }
 
-function PasswordField({ field, error, label }: Props) {
+function PasswordField<T extends Record<string, unknown> & { password: string }>({
+	field,
+	error,
+	label,
+}: Props<T>) {
 	const [showPassword, setShowPassword] = useState(false);
 
 	const handleClickShowPassword = () => setShowPassword((show) => !show);

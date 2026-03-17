@@ -64,6 +64,14 @@ const ErrorMessage = ({ customError }: { customError: string }) => {
 	);
 };
 
+const SuccessMessage = ({ customSuccess }: { customSuccess: string }) => {
+	return (
+		<div className="basis-full mb-4">
+			<Alert severity="success">{customSuccess}</Alert>
+		</div>
+	);
+};
+
 AuthForm.GoogleProvider = GoogleProvider;
 AuthForm.AuthFormHeader = AuthFormHeader;
 AuthForm.AuthFormLabel = AuthFormLabel;
@@ -72,3 +80,4 @@ AuthForm.AuthFooter = AuthFooter;
 AuthForm.Form = Form;
 AuthForm.FormFieldContainer = FormFieldContainer;
 AuthForm.ErrorMessage = ErrorMessage;
+AuthForm.SuccessMessage = SuccessMessage;

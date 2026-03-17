@@ -1,18 +1,15 @@
 import { TextField } from '@mui/material';
-import { ControllerRenderProps, FieldError } from 'react-hook-form';
+import { ControllerRenderProps, FieldError, Path } from 'react-hook-form';
 
-interface Props {
-	field: ControllerRenderProps<
-		{
-			email: string;
-			password: string;
-		},
-		'email'
-	>;
+interface Props<T extends Record<string, unknown> & { email: string }> {
+	field: ControllerRenderProps<T, Path<T>>;
 	error: FieldError | undefined;
 }
 
-function EmailField({ field, error }: Props) {
+function EmailField<T extends Record<string, unknown> & { email: string }>({
+	field,
+	error,
+}: Props<T>) {
 	return (
 		<TextField
 			{...field}

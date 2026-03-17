@@ -8,6 +8,7 @@ interface LoginRequest {
 
 interface LoginResponse {
 	message: string;
+	error?: string;
 }
 
 interface VerifyOTPResponse {
