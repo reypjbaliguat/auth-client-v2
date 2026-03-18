@@ -1,6 +1,29 @@
 import type { User } from '../../types';
 import { baseApi } from './baseApi';
 
+interface LinkPasswordRequest {
+	email: string;
+	password: string;
+	confirmPassword: string;
+}
+
+interface LinkPasswordResponse {
+	message: string; // "OTP sent to link password to your Google account"
+}
+
+interface VerifyPasswordLinkRequest {
+	email: string;
+	otp: string;
+	password: string;
+}
+
+interface VerifyPasswordLinkResponse {
+	accessToken: string;
+	refreshToken: string;
+	user: User;
+	message: string; // "Password successfully linked to your Google account"
+}
+
 interface LoginRequest {
 	email: string;
 	password: string;
@@ -135,6 +158,23 @@ export const authApi = baseApi.injectEndpoints({
 			}),
 			invalidatesTags: ['Auth'],
 		}),
+		linkPassword: builder.mutation<LinkPasswordResponse, LinkPasswordRequest>({
+			query: (data) => ({
+				url: 'auth/link-password',
+				method: 'POST',
+				body: data,
+			}),
+			invalidatesTags: ['Auth'],
+		}),
+
+		verifyPasswordLink: builder.mutation<VerifyPasswordLinkResponse, VerifyPasswordLinkRequest>({
+			query: ({ email, otp, password }) => ({
+				url: 'auth/verify-password-link',
+				method: 'POST',
+				body: { email, otp, password },
+			}),
+			invalidatesTags: ['Auth'],
+		}),
 	}),
 });
 
@@ -150,4 +190,6 @@ export const {
 	useGetOtpStatusQuery,
 	useForgotPasswordMutation,
 	useResetPasswordMutation,
+	useLinkPasswordMutation,
+	useVerifyPasswordLinkMutation,
 } = authApi;

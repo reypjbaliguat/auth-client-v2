@@ -1,11 +1,16 @@
 'use client';
 
-import { useGoogleLoginMutation, useRegisterMutation } from '@/core/store/api/authApi';
+import {
+	useGoogleLoginMutation,
+	useLinkPasswordMutation,
+	useRegisterMutation,
+} from '@/core/store/api/authApi';
 import {
 	resetOtpStep,
 	selectIsAuthenticated,
 	selectOtpEmail,
 	selectOtpStep,
+	setAccountLinkingMode,
 	setAuthenticated,
 	setOtpStep,
 } from '@/core/store/features/auth';
@@ -20,6 +25,7 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { OtpForm } from '../components';
+import AccountLinkingModal from '../components/AccountLinkingModal';
 import AuthForm from '../components/AuthForm';
 import { AuthFormFields } from '../components/AuthFormFields';
 import schema, { SignUpFormData } from './schema';
@@ -31,6 +37,7 @@ export default function SignUpPage() {
 	const persistedEmail = useAppSelector(selectOtpEmail);
 	const [customError, setCustomError] = useState<string>('');
 	const [customSuccess, setCustomSuccess] = useState<string>('');
+	const [openAccountLinkingModal, setOpenAccountLinkingModal] = useState(false);
 
 	const router = useRouter();
 	const {
@@ -50,6 +57,7 @@ export default function SignUpPage() {
 
 	const [register, { isLoading }] = useRegisterMutation();
 	const [googleLogin, { isLoading: isGoogleLoading }] = useGoogleLoginMutation();
+	const [linkPassword, { isLoading: isLinkingPassword }] = useLinkPasswordMutation();
 
 	const GOOGLE_ERROR_MESSAGE = 'Google registration failed. Please try again.';
 
@@ -72,6 +80,7 @@ export default function SignUpPage() {
 	useEffect(() => {
 		return () => {
 			dispatch(resetOtpStep());
+			dispatch(setAccountLinkingMode(false)); // Reset account linking mode on unmount
 		};
 	}, []);
 
@@ -85,11 +94,18 @@ export default function SignUpPage() {
 		if (result.success && result.data) {
 			if (result.data.message.includes('OTP sent')) {
 				dispatch(setOtpStep({ step: 'OTP Verification', email: formData.email }));
+			} else {
+				setCustomSuccess(result.data.message);
+				router.push('/sign-in');
 			}
 		} else {
-			if (result.error?.includes('Email already exists with password login')) {
+			// Handle account linking scenario
+			if (result.error?.includes('HAS_GOOGLE_ACCOUNT')) {
+				// Adjust based on your backend message
+				setOpenAccountLinkingModal(true);
+				setCustomError(''); // Clear error since this isn't really an error
+			} else if (result.error?.includes('Email already exists with password login')) {
 				setCustomSuccess(result.error);
-				// wait for 3 seconds before redirecting to login page
 				setTimeout(() => {
 					router.push('/sign-in');
 				}, 3000);
@@ -154,6 +170,33 @@ export default function SignUpPage() {
 
 	const handleGoogleFailure = () => {
 		setCustomError(GOOGLE_ERROR_MESSAGE);
+	};
+
+	const handleAccountLinking = async () => {
+		setCustomError('');
+		setOpenAccountLinkingModal(false); // Hide the confirmation dialog
+
+		const formData = getValues(); // Get current form values
+		const result = await handleAsyncOperation(
+			() => linkPassword(formData).unwrap(),
+			'Failed to send OTP for account linking. Please try again.'
+		);
+
+		if (result.success && result.data) {
+			if (result.data.message.includes('OTP sent')) {
+				// Reuse existing OTP flow but mark it as account linking
+				dispatch(
+					setOtpStep({
+						step: 'OTP Verification',
+						email: formData.email,
+					})
+				);
+				// You might want to add a flag to Redux to track this is account linking
+				dispatch(setAccountLinkingMode(true));
+			}
+		} else {
+			setCustomError(result.error || 'Failed to initiate account linking');
+		}
 	};
 
 	return (
@@ -224,6 +267,12 @@ export default function SignUpPage() {
 					</>
 				) : (
 					<OtpForm email={persistedEmail || getValues('email')} />
+				)}
+				{openAccountLinkingModal && (
+					<AccountLinkingModal
+						open={openAccountLinkingModal}
+						handleClose={() => setOpenAccountLinkingModal(false)}
+					/>
 				)}
 			</AuthForm.GoogleProvider>
 		</AuthForm>

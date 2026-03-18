@@ -14,6 +14,7 @@ export interface AuthState {
 		remainingTime: number; // seconds
 		canResendAt: number | null; // Unix timestamp
 	};
+	isAccountLinking: boolean;
 }
 
 const initialState: AuthState = {
@@ -29,6 +30,7 @@ const initialState: AuthState = {
 		remainingTime: 0,
 		canResendAt: null,
 	},
+	isAccountLinking: false,
 };
 
 const authSlice = createSlice({
@@ -102,6 +104,9 @@ const authSlice = createSlice({
 				}
 			}
 		},
+		setAccountLinkingMode(state, action: PayloadAction<boolean>) {
+			state.isAccountLinking = action.payload;
+		},
 	},
 });
 
@@ -115,6 +120,7 @@ export const {
 	setOtpTimer,
 	updateOtpTimer,
 	setForgotPasswordStep,
+	setAccountLinkingMode,
 } = authSlice.actions;
 
 export default authSlice.reducer;
