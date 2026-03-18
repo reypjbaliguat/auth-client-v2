@@ -7,6 +7,7 @@ import {
 } from '@/core/store/api/authApi';
 import {
 	resetOtpStep,
+	selectIsAccountLinking,
 	selectIsAuthenticated,
 	selectOtpEmail,
 	selectOtpStep,
@@ -34,10 +35,12 @@ export default function SignUpPage() {
 	const dispatch = useAppDispatch();
 	const isAuthenticated = useAppSelector(selectIsAuthenticated);
 	const step = useAppSelector(selectOtpStep);
+	const isAccountLinking = useAppSelector(selectIsAccountLinking);
 	const persistedEmail = useAppSelector(selectOtpEmail);
 	const [customError, setCustomError] = useState<string>('');
 	const [customSuccess, setCustomSuccess] = useState<string>('');
 	const [openAccountLinkingModal, setOpenAccountLinkingModal] = useState(false);
+	const [accountLinkingPassword, setAccountLinkingPassword] = useState<string>('');
 
 	const router = useRouter();
 	const {
@@ -81,6 +84,7 @@ export default function SignUpPage() {
 		return () => {
 			dispatch(resetOtpStep());
 			dispatch(setAccountLinkingMode(false)); // Reset account linking mode on unmount
+			setAccountLinkingPassword(''); // Clear on unmount
 		};
 	}, []);
 
@@ -177,6 +181,9 @@ export default function SignUpPage() {
 		setOpenAccountLinkingModal(false); // Hide the confirmation dialog
 
 		const formData = getValues(); // Get current form values
+		// Store password for OTP verification
+		setAccountLinkingPassword(formData.password);
+
 		const result = await handleAsyncOperation(
 			() => linkPassword(formData).unwrap(),
 			'Failed to send OTP for account linking. Please try again.'
@@ -199,6 +206,9 @@ export default function SignUpPage() {
 		}
 	};
 
+	const handleAccountLinkingModalClose = () => {
+		setOpenAccountLinkingModal(false);
+	};
 	return (
 		<AuthForm>
 			<AuthForm.GoogleProvider>
@@ -266,12 +276,17 @@ export default function SignUpPage() {
 						</AuthForm.AuthFooter>
 					</>
 				) : (
-					<OtpForm email={persistedEmail || getValues('email')} />
+					<OtpForm
+						email={persistedEmail || getValues('email')}
+						password={isAccountLinking ? accountLinkingPassword : undefined}
+					/>
 				)}
 				{openAccountLinkingModal && (
 					<AccountLinkingModal
 						open={openAccountLinkingModal}
-						handleClose={() => setOpenAccountLinkingModal(false)}
+						handleClose={handleAccountLinkingModalClose}
+						isLinkingPassword={isLinkingPassword}
+						handleAccountLinking={handleAccountLinking}
 					/>
 				)}
 			</AuthForm.GoogleProvider>

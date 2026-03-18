@@ -4,16 +4,19 @@ import {
 	useGetOtpStatusQuery,
 	useResendOtpMutation,
 	useVerifyOtpMutation,
+	useVerifyPasswordLinkMutation,
 } from '@/core/store/api/authApi';
 import {
 	resetOtpStep,
+	selectIsAccountLinking,
+	setAccountLinkingMode,
 	setAuthenticated,
 	setOtpStep,
 	setOtpTimer,
 	updateOtpTimer,
 } from '@/core/store/features/auth';
 import { useAppDispatch, useAppSelector } from '@/core/store/hooks';
-import { AuthErrorHandler } from '@/core/utils/errorHandler';
+import { AuthErrorHandler, handleAsyncOperation } from '@/core/utils/errorHandler';
 import { Alert, Box, Button, Typography } from '@mui/material';
 import Cookies from 'js-cookie';
 import { MuiOtpInput } from 'mui-one-time-password-input';
@@ -22,8 +25,9 @@ import { useCallback, useEffect, useState } from 'react';
 
 interface Props {
 	email: string;
+	password?: string; // Optional password for account linking scenarios
 }
-function OtpForm({ email }: Props) {
+function OtpForm({ email, password }: Props) {
 	const [otp, setOtp] = useState('');
 	const [error, setError] = useState<string>('');
 	const [resendSuccess, setResendSuccess] = useState<string>('');
@@ -31,9 +35,11 @@ function OtpForm({ email }: Props) {
 	const router = useRouter();
 	const pathname = usePathname();
 	const otpTimer = useAppSelector((state) => state.auth.otpTimer);
+	const isAccountLinking = useAppSelector(selectIsAccountLinking);
 
 	// API hooks
 	const [verifyOtp, { isLoading }] = useVerifyOtpMutation();
+	const [verifyPasswordLink] = useVerifyPasswordLinkMutation();
 	const [resendOtp, { isLoading: isResending }] = useResendOtpMutation();
 	const { data: otpStatus } = useGetOtpStatusQuery(
 		{ email },
@@ -65,6 +71,12 @@ function OtpForm({ email }: Props) {
 			return () => clearInterval(interval);
 		}
 	}, [otpTimer.canResend, otpTimer.canResendAt, dispatch]);
+
+	useEffect(() => {
+		return () => {
+			// Component cleanup - password will be cleared when component unmounts
+		};
+	}, []);
 
 	const handleBack = () => {
 		// Determine which step to go back to based on current route
@@ -114,51 +126,103 @@ function OtpForm({ email }: Props) {
 			return;
 		}
 
-		try {
-			const response = await verifyOtp({ email, otp }).unwrap();
+		let result;
+		if (isAccountLinking) {
+			result = await handleAsyncOperation(
+				() => verifyPasswordLink({ email, otp, password: password! }).unwrap(),
+				'Failed to link password. Please try again.'
+			);
+			if (result.success && result.data) {
+				dispatch(setAccountLinkingMode(false)); // Exit account linking mode
+				const token = result.data?.accessToken;
+				if (!token) {
+					throw new Error('No token received from server');
+				}
 
-			// Extract token from response (adjust based on your API response structure)
-			const token = response?.accessToken;
-
-			if (!token) {
-				throw new Error('No token received from server');
-			}
-
-			// Store token in secure cookie
-			Cookies.set('token', token, {
-				secure: process.env.NODE_ENV === 'production',
-				sameSite: 'strict',
-				httpOnly: false, // Set to true for max security if using /me pattern
-				expires: 7, // 7 days
-				path: '/', // Available across entire app
-			});
-
-			// Store refresh token if provided
-			if (response.refreshToken) {
-				Cookies.set('refreshToken', response.refreshToken, {
+				// Store token in secure cookie
+				Cookies.set('token', token, {
 					secure: process.env.NODE_ENV === 'production',
 					sameSite: 'strict',
-					httpOnly: false,
-					expires: 30, // 30 days
-					path: '/',
+					httpOnly: false, // Set to true for max security if using /me pattern
+					expires: 7, // 7 days
+					path: '/', // Available across entire app
 				});
+
+				// Store refresh token if provided
+				if (result.data.refreshToken) {
+					Cookies.set('refreshToken', result.data.refreshToken, {
+						secure: process.env.NODE_ENV === 'production',
+						sameSite: 'strict',
+						httpOnly: false,
+						expires: 30, // 30 days
+						path: '/',
+					});
+				}
+
+				// Update Redux auth state
+				console.log('setauthenticated');
+				dispatch(
+					setAuthenticated({
+						user: result.data?.user || null,
+					})
+				);
+
+				// Reset OTP step on successful verification
+				dispatch(resetOtpStep());
+
+				// Redirect to dashboard
+				router.replace('/dashboard'); // Use replace to prevent back navigation to OTP
+			} else {
+				setError(result.error || 'An unexpected error occurred during account linking.');
 			}
-
-			// Update Redux auth state
-			console.log('setauthenticated');
-			dispatch(
-				setAuthenticated({
-					user: response.user || null,
-				})
+		} else {
+			result = await handleAsyncOperation(
+				() => verifyOtp({ email, otp }).unwrap(),
+				'Failed to verify OTP. Please try again.'
 			);
+			if (result.success && result.data) {
+				dispatch(setAccountLinkingMode(false)); // Exit account linking mode
+				const token = result.data?.accessToken;
+				if (!token) {
+					throw new Error('No token received from server');
+				}
 
-			// Reset OTP step on successful verification
-			dispatch(resetOtpStep());
+				// Store token in secure cookie
+				Cookies.set('token', token, {
+					secure: process.env.NODE_ENV === 'production',
+					sameSite: 'strict',
+					httpOnly: false, // Set to true for max security if using /me pattern
+					expires: 7, // 7 days
+					path: '/', // Available across entire app
+				});
 
-			// Redirect to dashboard
-			router.replace('/dashboard'); // Use replace to prevent back navigation to OTP
-		} catch (error) {
-			setError(AuthErrorHandler.extractMessage(error));
+				// Store refresh token if provided
+				if (result.data.refreshToken) {
+					Cookies.set('refreshToken', result.data.refreshToken, {
+						secure: process.env.NODE_ENV === 'production',
+						sameSite: 'strict',
+						httpOnly: false,
+						expires: 30, // 30 days
+						path: '/',
+					});
+				}
+
+				// Update Redux auth state
+				console.log('setauthenticated');
+				dispatch(
+					setAuthenticated({
+						user: result.data?.user || null,
+					})
+				);
+
+				// Reset OTP step on successful verification
+				dispatch(resetOtpStep());
+
+				// Redirect to dashboard
+				router.replace('/dashboard'); // Use replace to prevent back navigation to OTP
+			} else {
+				setError(result.error || 'An unexpected error occurred during account linking.');
+			}
 		}
 	};
 	return (
