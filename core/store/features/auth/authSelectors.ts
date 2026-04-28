@@ -11,4 +11,7 @@ export const selectCanResendOtp = (state: RootState) => state.auth.otpTimer.canR
 export const selectOtpRemainingTime = (state: RootState) => state.auth.otpTimer.remainingTime;
 export const selectForgotPasswordEmail = (state: RootState) => state.auth.forgotPasswordEmail;
 export const selectForgotPasswordStep = (state: RootState) => state.auth.forgotPasswordStep;
-export const selectIsAccountLinking = (state: RootState) => state.auth.isAccountLinking;
+export const selectIsPasswordToGoogleLinking = (state: RootState) =>
+	state.auth.isPasswordToGoogleLinking;
+export const selectIsGoogleToPasswordLinking = (state: RootState) =>
+	state.auth.isGoogleToPasswordLinking;

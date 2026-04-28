@@ -14,7 +14,8 @@ export interface AuthState {
 		remainingTime: number; // seconds
 		canResendAt: number | null; // Unix timestamp
 	};
-	isAccountLinking: boolean;
+	isPasswordToGoogleLinking: boolean;
+	isGoogleToPasswordLinking: boolean;
 }
 
 const initialState: AuthState = {
@@ -30,7 +31,8 @@ const initialState: AuthState = {
 		remainingTime: 0,
 		canResendAt: null,
 	},
-	isAccountLinking: false,
+	isPasswordToGoogleLinking: false,
+	isGoogleToPasswordLinking: false,
 };
 
 const authSlice = createSlice({
@@ -104,8 +106,11 @@ const authSlice = createSlice({
 				}
 			}
 		},
-		setAccountLinkingMode(state, action: PayloadAction<boolean>) {
-			state.isAccountLinking = action.payload;
+		setPasswordToGoogleLinkingMode(state, action: PayloadAction<boolean>) {
+			state.isPasswordToGoogleLinking = action.payload;
+		},
+		setGoogleToPasswordLinkingMode(state, action: PayloadAction<boolean>) {
+			state.isGoogleToPasswordLinking = action.payload;
 		},
 	},
 });
@@ -120,7 +125,8 @@ export const {
 	setOtpTimer,
 	updateOtpTimer,
 	setForgotPasswordStep,
-	setAccountLinkingMode,
+	setPasswordToGoogleLinkingMode,
+	setGoogleToPasswordLinkingMode,
 } = authSlice.actions;
 
 export default authSlice.reducer;

@@ -1,6 +1,15 @@
 import type { User } from '../../types';
 import { baseApi } from './baseApi';
 
+interface LinkGoogleAccountRequest {
+	credential: string;
+	email: string;
+}
+
+interface LinkGoogleAccountResponse {
+	message: string; // "OTP sent to link Google account"
+}
+
 interface LinkPasswordRequest {
 	email: string;
 	password: string;
@@ -24,6 +33,18 @@ interface VerifyPasswordLinkResponse {
 	message: string; // "Password successfully linked to your Google account"
 }
 
+interface VerifyGoogleLinkRequest {
+	email: string;
+	otp: string;
+	credential: string;
+}
+
+interface VerifyGoogleLinkResponse {
+	accessToken: string;
+	refreshToken: string;
+	user: User;
+	message: string; // "Google account successfully linked to your existing account"
+}
 interface LoginRequest {
 	email: string;
 	password: string;
@@ -175,6 +196,22 @@ export const authApi = baseApi.injectEndpoints({
 			}),
 			invalidatesTags: ['Auth'],
 		}),
+		linkGoogleAccount: builder.mutation<LinkGoogleAccountResponse, LinkGoogleAccountRequest>({
+			query: (data) => ({
+				url: 'auth/link-google-account',
+				method: 'POST',
+				body: data,
+			}),
+			invalidatesTags: ['Auth'],
+		}),
+		verifyGoogleLink: builder.mutation<VerifyGoogleLinkResponse, VerifyGoogleLinkRequest>({
+			query: ({ email, otp, credential }) => ({
+				url: 'auth/verify-google-link',
+				method: 'POST',
+				body: { email, otp, credential },
+			}),
+			invalidatesTags: ['Auth'],
+		}),
 	}),
 });
 
@@ -192,4 +229,6 @@ export const {
 	useResetPasswordMutation,
 	useLinkPasswordMutation,
 	useVerifyPasswordLinkMutation,
+	useLinkGoogleAccountMutation,
+	useVerifyGoogleLinkMutation,
 } = authApi;

@@ -7,3 +7,9 @@ export interface User {
 	avatarUrl?: string;
 	createdAt: string;
 }
+
+export interface PasswordLinking {
+	show: boolean;
+	credential: string | null;
+	email: string | null;
+}

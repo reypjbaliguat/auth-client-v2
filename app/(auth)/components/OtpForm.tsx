@@ -1,50 +1,39 @@
 'use client';
 
-import {
-	useGetOtpStatusQuery,
-	useResendOtpMutation,
-	useVerifyOtpMutation,
-	useVerifyPasswordLinkMutation,
-} from '@/core/store/api/authApi';
-import {
-	resetOtpStep,
-	selectIsAccountLinking,
-	setAccountLinkingMode,
-	setAuthenticated,
-	setOtpStep,
-	setOtpTimer,
-	updateOtpTimer,
-} from '@/core/store/features/auth';
+import { useOtpStrategy } from '@/core/hooks/useOtpStrategy';
+import { useGetOtpStatusQuery } from '@/core/store/api/authApi';
+import { setOtpStep, setOtpTimer, updateOtpTimer } from '@/core/store/features/auth';
 import { useAppDispatch, useAppSelector } from '@/core/store/hooks';
+import { OtpType } from '@/core/types/otp';
 import { AuthErrorHandler, handleAsyncOperation } from '@/core/utils/errorHandler';
 import { Alert, Box, Button, Typography } from '@mui/material';
-import Cookies from 'js-cookie';
 import { MuiOtpInput } from 'mui-one-time-password-input';
-import { usePathname, useRouter } from 'next/navigation';
+import { usePathname } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
 
 interface Props {
-	email: string;
-	password?: string; // Optional password for account linking scenarios
+	otpConfig: OtpType; // Single configuration object containing all OTP data
 }
-function OtpForm({ email, password }: Props) {
+
+function OtpForm({ otpConfig }: Props) {
 	const [otp, setOtp] = useState('');
 	const [error, setError] = useState<string>('');
 	const [resendSuccess, setResendSuccess] = useState<string>('');
+	const [isSubmitting, setIsSubmitting] = useState(false);
+	const [isResending, setIsResending] = useState(false);
+
 	const dispatch = useAppDispatch();
-	const router = useRouter();
 	const pathname = usePathname();
 	const otpTimer = useAppSelector((state) => state.auth.otpTimer);
-	const isAccountLinking = useAppSelector(selectIsAccountLinking);
+
+	// Get strategy based on OTP type
+	const strategy = useOtpStrategy(otpConfig);
 
 	// API hooks
-	const [verifyOtp, { isLoading }] = useVerifyOtpMutation();
-	const [verifyPasswordLink] = useVerifyPasswordLinkMutation();
-	const [resendOtp, { isLoading: isResending }] = useResendOtpMutation();
 	const { data: otpStatus } = useGetOtpStatusQuery(
-		{ email },
+		{ email: otpConfig.email },
 		{
-			skip: !email,
+			skip: !otpConfig.email,
 		}
 	);
 
@@ -72,12 +61,6 @@ function OtpForm({ email, password }: Props) {
 		}
 	}, [otpTimer.canResend, otpTimer.canResendAt, dispatch]);
 
-	useEffect(() => {
-		return () => {
-			// Component cleanup - password will be cleared when component unmounts
-		};
-	}, []);
-
 	const handleBack = () => {
 		// Determine which step to go back to based on current route
 		const backStep = pathname.includes('sign-up') ? 'Register' : 'Login';
@@ -85,25 +68,38 @@ function OtpForm({ email, password }: Props) {
 	};
 
 	const handleResendOtp = async () => {
-		if (!otpTimer.canResend) return;
+		if (!otpTimer.canResend || isResending) return;
 
 		setError('');
 		setResendSuccess('');
+		setIsResending(true);
 
 		try {
-			const response = await resendOtp({ email }).unwrap();
-			setResendSuccess(response.message || 'OTP resent successfully!');
-
-			// Update timer state
-			dispatch(
-				setOtpTimer({
-					canResend: false,
-					remainingTime: Math.floor(response.canResendAt - Date.now() / 1000),
-					canResendAt: response.canResendAt,
-				})
+			const result = await handleAsyncOperation(
+				() => strategy.resend(),
+				'Failed to resend OTP. Please try again.'
 			);
+
+			if (result.success) {
+				setResendSuccess('OTP resent successfully!');
+
+				// Update timer state if response contains timing info
+				if (result.data?.canResendAt) {
+					dispatch(
+						setOtpTimer({
+							canResend: false,
+							remainingTime: Math.floor(result.data.canResendAt - Date.now() / 1000),
+							canResendAt: result.data.canResendAt,
+						})
+					);
+				}
+			} else {
+				setError(result.error || 'Failed to resend OTP');
+			}
 		} catch (error) {
 			setError(AuthErrorHandler.extractMessage(error));
+		} finally {
+			setIsResending(false);
 		}
 	};
 
@@ -113,118 +109,41 @@ function OtpForm({ email, password }: Props) {
 		const secs = seconds % 60;
 		return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
 	}, []);
+
 	const handleChange = (newValue: string) => {
 		setOtp(newValue);
 		setError(''); // Clear error when user types
 	};
+
 	const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
 		event.preventDefault();
-		setError(''); // Clear any existing errors
+		setError('');
 
 		if (!otp || otp.length !== 6) {
 			setError('Please enter a valid 6-digit OTP');
 			return;
 		}
 
-		let result;
-		if (isAccountLinking) {
-			result = await handleAsyncOperation(
-				() => verifyPasswordLink({ email, otp, password: password! }).unwrap(),
-				'Failed to link password. Please try again.'
+		setIsSubmitting(true);
+
+		try {
+			const result = await handleAsyncOperation(
+				() => strategy.verify(otp),
+				strategy.getErrorMessage()
 			);
+
 			if (result.success && result.data) {
-				dispatch(setAccountLinkingMode(false)); // Exit account linking mode
-				const token = result.data?.accessToken;
-				if (!token) {
-					throw new Error('No token received from server');
-				}
-
-				// Store token in secure cookie
-				Cookies.set('token', token, {
-					secure: process.env.NODE_ENV === 'production',
-					sameSite: 'strict',
-					httpOnly: false, // Set to true for max security if using /me pattern
-					expires: 7, // 7 days
-					path: '/', // Available across entire app
-				});
-
-				// Store refresh token if provided
-				if (result.data.refreshToken) {
-					Cookies.set('refreshToken', result.data.refreshToken, {
-						secure: process.env.NODE_ENV === 'production',
-						sameSite: 'strict',
-						httpOnly: false,
-						expires: 30, // 30 days
-						path: '/',
-					});
-				}
-
-				// Update Redux auth state
-				console.log('setauthenticated');
-				dispatch(
-					setAuthenticated({
-						user: result.data?.user || null,
-					})
-				);
-
-				// Reset OTP step on successful verification
-				dispatch(resetOtpStep());
-
-				// Redirect to dashboard
-				router.replace('/dashboard'); // Use replace to prevent back navigation to OTP
+				await strategy.handleSuccess(result.data);
 			} else {
-				setError(result.error || 'An unexpected error occurred during account linking.');
+				setError(result.error || strategy.getErrorMessage());
 			}
-		} else {
-			result = await handleAsyncOperation(
-				() => verifyOtp({ email, otp }).unwrap(),
-				'Failed to verify OTP. Please try again.'
-			);
-			if (result.success && result.data) {
-				dispatch(setAccountLinkingMode(false)); // Exit account linking mode
-				const token = result.data?.accessToken;
-				if (!token) {
-					throw new Error('No token received from server');
-				}
-
-				// Store token in secure cookie
-				Cookies.set('token', token, {
-					secure: process.env.NODE_ENV === 'production',
-					sameSite: 'strict',
-					httpOnly: false, // Set to true for max security if using /me pattern
-					expires: 7, // 7 days
-					path: '/', // Available across entire app
-				});
-
-				// Store refresh token if provided
-				if (result.data.refreshToken) {
-					Cookies.set('refreshToken', result.data.refreshToken, {
-						secure: process.env.NODE_ENV === 'production',
-						sameSite: 'strict',
-						httpOnly: false,
-						expires: 30, // 30 days
-						path: '/',
-					});
-				}
-
-				// Update Redux auth state
-				console.log('setauthenticated');
-				dispatch(
-					setAuthenticated({
-						user: result.data?.user || null,
-					})
-				);
-
-				// Reset OTP step on successful verification
-				dispatch(resetOtpStep());
-
-				// Redirect to dashboard
-				router.replace('/dashboard'); // Use replace to prevent back navigation to OTP
-			} else {
-				setError(result.error || 'An unexpected error occurred during account linking.');
-			}
+		} catch (error) {
+			setError(AuthErrorHandler.extractMessage(error));
+		} finally {
+			setIsSubmitting(false);
 		}
 	};
+
 	return (
 		<form onSubmit={handleSubmit} className="flex flex-col gap-y-4">
 			<MuiOtpInput value={otp} length={6} display={'flex'} gap={'5px'} onChange={handleChange} />
@@ -251,12 +170,12 @@ function OtpForm({ email, password }: Props) {
 			<div className="flex flex-col gap-y-2">
 				<Button
 					type="submit"
-					loading={isLoading}
+					loading={isSubmitting}
 					variant="contained"
 					color="primary"
-					disabled={!otp || otp.length !== 6}
+					disabled={!otp || otp.length !== 6 || isSubmitting}
 				>
-					Verify OTP
+					{strategy.getButtonText()}
 				</Button>
 
 				{/* Resend OTP Button */}
@@ -264,13 +183,13 @@ function OtpForm({ email, password }: Props) {
 					variant="text"
 					color="primary"
 					onClick={handleResendOtp}
-					disabled={!otpTimer.canResend || isResending || isLoading}
+					disabled={!otpTimer.canResend || isResending || isSubmitting}
 					size="small"
 				>
 					{isResending ? 'Resending...' : 'Resend OTP'}
 				</Button>
 
-				<Button variant="outlined" onClick={handleBack} disabled={isLoading}>
+				<Button variant="outlined" onClick={handleBack} disabled={isSubmitting}>
 					Back to {pathname.includes('sign-up') ? 'Register' : 'Login'}
 				</Button>
 			</div>

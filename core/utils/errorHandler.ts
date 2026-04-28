@@ -80,7 +80,7 @@ export const extractErrorMessage = (
 export const handleAsyncOperation = async <T>(
 	operation: () => Promise<T>,
 	fallbackMessage?: string
-): Promise<{ success: boolean; data?: T; error?: string }> => {
+): Promise<{ success: boolean; data?: T; error?: string; email?: string }> => {
 	try {
 		const data = await operation();
 		return { success: true, data };
@@ -88,6 +88,7 @@ export const handleAsyncOperation = async <T>(
 		return {
 			success: false,
 			error: extractErrorMessage(error, fallbackMessage),
+			email: (error as { data?: { email?: string } })?.data?.email, // Include email if available for account linking scenarios
 		};
 	}
 };

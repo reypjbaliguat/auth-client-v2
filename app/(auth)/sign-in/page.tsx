@@ -10,6 +10,7 @@ import {
 	setOtpStep,
 } from '@/core/store/features/auth';
 import { useAppDispatch, useAppSelector } from '@/core/store/hooks';
+import { OtpType, PasswordLinking } from '@/core/types';
 import { handleAsyncOperation } from '@/core/utils/errorHandler';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Button, Divider } from '@mui/material';
@@ -30,6 +31,11 @@ export default function SignInPage() {
 	const step = useAppSelector(selectOtpStep);
 	const persistedEmail = useAppSelector(selectOtpEmail);
 	const [customError, setCustomError] = useState<string>('');
+	const [passwordAccountLinking, setPasswordAccountLinking] = useState<PasswordLinking>({
+		show: false,
+		credential: null,
+		email: null,
+	});
 	const router = useRouter();
 	const GOOGLE_ERROR_MESSAGE = 'Google login failed. Please try again.';
 	const {
@@ -140,6 +146,26 @@ export default function SignInPage() {
 	const handleGoogleFailure = () => {
 		setCustomError(GOOGLE_ERROR_MESSAGE);
 	};
+
+	// Helper function to get the correct OTP configuration for sign-in
+	const getOtpConfig = (): OtpType => {
+		const email = persistedEmail || getValues('email');
+
+		if (passwordAccountLinking.credential && passwordAccountLinking.email) {
+			return {
+				type: 'GOOGLE_TO_PASSWORD_LINKING',
+				email: passwordAccountLinking.email,
+				credential: passwordAccountLinking.credential,
+			};
+		}
+
+		// Default login OTP
+		return {
+			type: 'LOGIN',
+			email,
+		};
+	};
+
 	return (
 		<AuthForm>
 			<AuthForm.GoogleProvider>
@@ -197,7 +223,7 @@ export default function SignInPage() {
 						</AuthForm.AuthFooter>
 					</>
 				) : (
-					<OtpForm email={persistedEmail || getValues('email')} />
+					<OtpForm otpConfig={getOtpConfig()} />
 				)}
 			</AuthForm.GoogleProvider>
 		</AuthForm>
