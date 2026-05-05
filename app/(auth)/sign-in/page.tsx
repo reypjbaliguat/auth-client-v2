@@ -1,6 +1,11 @@
 'use client';
 
-import { useGoogleLoginMutation, useLoginMutation } from '@/core/store/api/authApi';
+import { Loader } from '@/core/components/Loader';
+import {
+	useGoogleLoginMutation,
+	useLinkGoogleAccountMutation,
+	useLoginMutation,
+} from '@/core/store/api/authApi';
 import {
 	resetOtpStep,
 	selectIsAuthenticated,
@@ -8,6 +13,7 @@ import {
 	selectOtpStep,
 	setAuthenticated,
 	setOtpStep,
+	setPasswordToGoogleLinkingMode,
 } from '@/core/store/features/auth';
 import { useAppDispatch, useAppSelector } from '@/core/store/hooks';
 import { OtpType, PasswordLinking } from '@/core/types';
@@ -21,6 +27,7 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { OtpForm } from '../components';
+import AccountLinkingModal from '../components/AccountLinkingModal';
 import AuthForm from '../components/AuthForm';
 import { AuthFormFields } from '../components/AuthFormFields';
 import schema, { SignInFormData } from './schema';
@@ -31,6 +38,7 @@ export default function SignInPage() {
 	const step = useAppSelector(selectOtpStep);
 	const persistedEmail = useAppSelector(selectOtpEmail);
 	const [customError, setCustomError] = useState<string>('');
+	const [loading, setLoading] = useState<boolean>(false);
 	const [passwordAccountLinking, setPasswordAccountLinking] = useState<PasswordLinking>({
 		show: false,
 		credential: null,
@@ -51,6 +59,7 @@ export default function SignInPage() {
 
 	const [login, { isLoading }] = useLoginMutation();
 	const [googleLogin, { isLoading: isGoogleLoading }] = useGoogleLoginMutation();
+	const [linkGoogleAccount, { isLoading: isLinkingGoogle }] = useLinkGoogleAccountMutation();
 
 	// Set Login step when component mounts (if not already in OTP verification)
 	useEffect(() => {
@@ -93,6 +102,7 @@ export default function SignInPage() {
 
 	const handleGoogleSuccess = async (credentialResponse: { credential?: string }) => {
 		setCustomError(''); // Clear any existing errors
+		setLoading(true);
 		if (!credentialResponse.credential) {
 			setCustomError('No credential received from Google. Please try again.');
 			return;
@@ -138,13 +148,28 @@ export default function SignInPage() {
 
 			// Redirect to dashboard
 			router.replace('/dashboard');
+			setLoading(false);
 		} else {
-			setCustomError(result.error || GOOGLE_ERROR_MESSAGE);
+			// Handle account linking for Google → Password
+			if (result.error?.includes('EMAIL_EXISTS_PASSWORD')) {
+				// Extract email from Google credential (you'd need to decode JWT)
+				// For now, you could ask user to enter email or get it from form
+				setPasswordAccountLinking({
+					show: true,
+					credential: credentialResponse.credential,
+					email: result.email!, // Use form email or extract from JWT
+				});
+				setCustomError(''); // Clear error since this is account linking
+			} else {
+				setCustomError(result.error || GOOGLE_ERROR_MESSAGE);
+			}
+			setLoading(false);
 		}
 	};
 
 	const handleGoogleFailure = () => {
 		setCustomError(GOOGLE_ERROR_MESSAGE);
+		setLoading(false);
 	};
 
 	// Helper function to get the correct OTP configuration for sign-in
@@ -164,6 +189,53 @@ export default function SignInPage() {
 			type: 'LOGIN',
 			email,
 		};
+	};
+
+	if (loading) {
+		return <Loader />;
+	}
+
+	const handleAccountLinkingModalClose = () => {
+		setPasswordAccountLinking({
+			show: false,
+			credential: null,
+			email: null,
+		});
+	};
+
+	const handleAccountLinking = async () => {
+		setCustomError('');
+
+		if (!passwordAccountLinking.credential) {
+			setCustomError('Google credential missing. Please try again.');
+			return;
+		}
+
+		setPasswordAccountLinking((prev) => ({ ...prev, show: false }));
+
+		// You'll need a new API endpoint for this
+		const result = await handleAsyncOperation(
+			() =>
+				linkGoogleAccount({
+					credential: passwordAccountLinking.credential!,
+					email: passwordAccountLinking.email!,
+				}).unwrap(),
+			'Failed to send OTP for Google account linking.'
+		);
+
+		if (result.success && result.data) {
+			if (result.data.message.includes('OTP sent')) {
+				dispatch(setPasswordToGoogleLinkingMode(true));
+				dispatch(
+					setOtpStep({
+						step: 'OTP Verification',
+						email: passwordAccountLinking.email!,
+					})
+				);
+			}
+		} else {
+			setCustomError(result.error || 'Failed to initiate Google account linking');
+		}
 	};
 
 	return (
@@ -224,6 +296,16 @@ export default function SignInPage() {
 					</>
 				) : (
 					<OtpForm otpConfig={getOtpConfig()} />
+				)}
+				{passwordAccountLinking.show && (
+					<AccountLinkingModal
+						open={passwordAccountLinking.show}
+						type={'google-to-password'}
+						handleClose={handleAccountLinkingModalClose}
+						isLinkingPassword={isLinkingGoogle}
+						handleAccountLinking={handleAccountLinking}
+						passwordAccountLinkingEmail={passwordAccountLinking.email}
+					/>
 				)}
 			</AuthForm.GoogleProvider>
 		</AuthForm>
