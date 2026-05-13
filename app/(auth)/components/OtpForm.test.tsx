@@ -15,10 +15,18 @@ vi.mock('next/navigation', () => ({
 const mockVerifyOtp = vi.fn();
 const mockResendOtp = vi.fn();
 const mockGetOtpStatus = vi.fn();
+const mockVerifyPasswordLink = vi.fn();
+const mockVerifyGoogleLink = vi.fn();
+const mockLinkPassword = vi.fn();
+const mockLinkGoogleAccount = vi.fn();
 vi.mock('@/core/store/api/authApi', () => ({
 	useVerifyOtpMutation: () => [mockVerifyOtp, { isLoading: false }],
 	useResendOtpMutation: () => [mockResendOtp, { isLoading: false }],
 	useGetOtpStatusQuery: () => mockGetOtpStatus(),
+	useVerifyPasswordLinkMutation: () => [mockVerifyPasswordLink, { isLoading: false }],
+	useVerifyGoogleLinkMutation: () => [mockVerifyGoogleLink, { isLoading: false }],
+	useLinkPasswordMutation: () => [mockLinkPassword, { isLoading: false }],
+	useLinkGoogleAccountMutation: () => [mockLinkGoogleAccount, { isLoading: false }],
 }));
 
 // Mock environment variable for baseURL
@@ -31,6 +39,10 @@ describe('OtpForm', () => {
 		vi.clearAllMocks();
 		mockVerifyOtp.mockReturnValue({ unwrap: vi.fn() });
 		mockResendOtp.mockReturnValue({ unwrap: vi.fn() });
+		mockVerifyPasswordLink.mockReturnValue({ unwrap: vi.fn() });
+		mockVerifyGoogleLink.mockReturnValue({ unwrap: vi.fn() });
+		mockLinkPassword.mockReturnValue({ unwrap: vi.fn() });
+		mockLinkGoogleAccount.mockReturnValue({ unwrap: vi.fn() });
 		// Default API response - can be overridden in individual tests
 		mockGetOtpStatus.mockReturnValue({
 			data: { canResend: true, remainingTime: 0, canResendAt: null },
@@ -40,8 +52,10 @@ describe('OtpForm', () => {
 		vi.resetAllMocks();
 	});
 
+	const loginOtpConfig = { type: 'LOGIN' as const, email: 'test@example.com' };
+
 	const renderOtpForm = (authState = {}) => {
-		return renderWithProviders(<OtpForm email="test@example.com" />, {
+		return renderWithProviders(<OtpForm otpConfig={loginOtpConfig} />, {
 			auth: {
 				isAuthenticated: false,
 				step: 'Login',
@@ -62,7 +76,7 @@ describe('OtpForm', () => {
 		act(() => {
 			renderOtpForm();
 		});
-		expect(screen.getByRole('button', { name: 'Verify OTP' })).toBeInTheDocument();
+		expect(screen.getByRole('button', { name: 'Verify Login' })).toBeInTheDocument();
 		expect(screen.getByRole('button', { name: 'Back to Login' })).toBeInTheDocument();
 		expect(screen.getByRole('button', { name: 'Resend OTP' })).toBeInTheDocument();
 	});

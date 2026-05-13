@@ -20,11 +20,19 @@ const mockLogin = vi.fn();
 const mockGoogleLogin = vi.fn();
 const mockVerifyOtp = vi.fn();
 const mockResendOtp = vi.fn();
+const mockLinkGoogleAccount = vi.fn();
+const mockVerifyPasswordLink = vi.fn();
+const mockVerifyGoogleLink = vi.fn();
+const mockLinkPassword = vi.fn();
 vi.mock('@/core/store/api/authApi', () => ({
 	useLoginMutation: () => [mockLogin, { isLoading: false, error: null }],
 	useGoogleLoginMutation: () => [mockGoogleLogin, { isLoading: false, error: null }],
+	useLinkGoogleAccountMutation: () => [mockLinkGoogleAccount, { isLoading: false, error: null }],
 	useVerifyOtpMutation: () => [mockVerifyOtp, { isLoading: false, error: null }],
 	useResendOtpMutation: () => [mockResendOtp, { isLoading: false, error: null }],
+	useVerifyPasswordLinkMutation: () => [mockVerifyPasswordLink, { isLoading: false, error: null }],
+	useVerifyGoogleLinkMutation: () => [mockVerifyGoogleLink, { isLoading: false, error: null }],
+	useLinkPasswordMutation: () => [mockLinkPassword, { isLoading: false, error: null }],
 	useGetOtpStatusQuery: () => ({ data: null, isLoading: false, error: null }),
 }));
 
@@ -65,6 +73,10 @@ describe('SignInPage - User Flows', () => {
 		mockGoogleLogin.mockReturnValue({ unwrap: vi.fn() });
 		mockVerifyOtp.mockReturnValue({ unwrap: vi.fn() });
 		mockResendOtp.mockReturnValue({ unwrap: vi.fn() });
+		mockLinkGoogleAccount.mockReturnValue({ unwrap: vi.fn() });
+		mockVerifyPasswordLink.mockReturnValue({ unwrap: vi.fn() });
+		mockVerifyGoogleLink.mockReturnValue({ unwrap: vi.fn() });
+		mockLinkPassword.mockReturnValue({ unwrap: vi.fn() });
 	});
 
 	const renderSignInPage = (authState = {}) => {
@@ -206,7 +218,7 @@ describe('SignInPage - User Flows', () => {
 		it('shows OTP form after successful login', () => {
 			renderSignInPage({ step: 'OTP Verification', otpEmail: 'user@example.com' });
 
-			expect(screen.getByText(/otp verification/i)).toBeInTheDocument();
+			expect(screen.getByRole('button', { name: 'Verify Login' })).toBeInTheDocument();
 			expect(screen.queryByLabelText(/email/i)).not.toBeInTheDocument();
 			expect(screen.queryByLabelText(/password/i)).not.toBeInTheDocument();
 		});
