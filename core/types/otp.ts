@@ -1,3 +1,5 @@
+import type { User } from './user';
+
 export type OtpType =
 	| { type: 'REGISTRATION'; email: string }
 	| { type: 'LOGIN'; email: string }
@@ -5,18 +7,23 @@ export type OtpType =
 	| { type: 'GOOGLE_TO_PASSWORD_LINKING'; email: string; credential: string }
 	| { type: 'FORGOT_PASSWORD'; email: string; newPassword: string };
 
-export interface OtpStrategy {
-	verify: (otp: string) => Promise<any>;
-	resend: () => Promise<any>;
-	getSuccessMessage: () => string;
-	getButtonText: () => string;
-	handleSuccess: (result: any) => Promise<void>;
-	getErrorMessage: () => string;
-}
-
 export interface AuthenticationResult {
 	accessToken: string;
 	refreshToken?: string;
-	user: any;
+	user: User;
 	message?: string;
+}
+
+export interface OtpResendResult {
+	message: string;
+	canResendAt?: number;
+}
+
+export interface OtpStrategy {
+	verify: (otp: string) => Promise<AuthenticationResult>;
+	resend: () => Promise<OtpResendResult>;
+	getSuccessMessage: () => string;
+	getButtonText: () => string;
+	handleSuccess: (result: AuthenticationResult) => Promise<void>;
+	getErrorMessage: () => string;
 }
