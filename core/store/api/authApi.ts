@@ -220,6 +220,7 @@ export const {
 	useLogoutMutation,
 	useVerifyOtpMutation,
 	useGetCurrentUserQuery,
+	useLazyGetCurrentUserQuery,
 	useGoogleLoginMutation,
 	useRefreshTokenMutation,
 	useRegisterMutation,

@@ -1,6 +1,41 @@
 import type { BaseQueryFn, FetchArgs, FetchBaseQueryError } from '@reduxjs/toolkit/query';
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 import Cookies from 'js-cookie';
+import { setUnauthenticated } from '../features/auth';
+
+type RefreshResponse = {
+	accessToken: string;
+	refreshToken?: string;
+};
+
+let refreshPromise: Promise<RefreshResponse | null> | null = null;
+
+const getAccessTokenCookieOptions = () => ({
+	secure: process.env.NODE_ENV === 'production',
+	sameSite: 'strict' as const,
+	expires: 7,
+	path: '/',
+});
+
+const getRefreshTokenCookieOptions = () => ({
+	secure: process.env.NODE_ENV === 'production',
+	sameSite: 'strict' as const,
+	expires: 30,
+	path: '/',
+});
+
+const clearAuthCookies = () => {
+	Cookies.remove('token', { path: '/' });
+	Cookies.remove('refreshToken', { path: '/' });
+};
+
+const isRefreshRequest = (args: string | FetchArgs) => {
+	if (typeof args === 'string') {
+		return args.includes('auth/refresh');
+	}
+
+	return typeof args.url === 'string' && args.url.includes('auth/refresh');
+};
 
 const baseQuery = fetchBaseQuery({
 	baseUrl: process.env.NEXT_PUBLIC_API_URL,
@@ -28,53 +63,56 @@ const baseQueryWithReauth: BaseQueryFn<string | FetchArgs, unknown, FetchBaseQue
 ) => {
 	let result = await baseQuery(args, api, extraOptions);
 
-	if (result.error && result.error.status === 401) {
+	if (result.error && result.error.status === 401 && !isRefreshRequest(args)) {
 		// Try to refresh the token
 		const refreshToken = Cookies.get('refreshToken');
-		if (refreshToken) {
-			const refreshResult = await baseQuery(
-				{
-					url: 'auth/refresh',
-					method: 'POST',
-					body: { refreshToken },
-				},
-				api,
-				extraOptions
-			);
 
-			if (refreshResult.data) {
-				const { accessToken, refreshToken: newRefreshToken } = refreshResult.data as {
-					accessToken: string;
-					refreshToken?: string;
-				};
+		if (!refreshToken) {
+			clearAuthCookies();
+			api.dispatch(setUnauthenticated());
+			if (typeof window !== 'undefined') {
+				window.location.href = '/sign-in';
+			}
+			return result;
+		}
 
-				// Update cookies
-				Cookies.set('token', accessToken, {
-					secure: process.env.NODE_ENV === 'production',
-					sameSite: 'strict',
-					httpOnly: false,
-					expires: 7,
-					path: '/',
-				});
-				if (newRefreshToken) {
-					Cookies.set('refreshToken', newRefreshToken, {
-						secure: process.env.NODE_ENV === 'production',
-						sameSite: 'strict',
-						httpOnly: false,
-						expires: 30,
-						path: '/',
-					});
+		if (!refreshPromise) {
+			refreshPromise = (async () => {
+				const refreshResult = await baseQuery(
+					{
+						url: 'auth/refresh',
+						method: 'POST',
+						body: { refreshToken },
+					},
+					api,
+					extraOptions
+				);
+
+				if (!refreshResult.data) {
+					return null;
 				}
 
-				// Retry the original request
-				result = await baseQuery(args, api, extraOptions);
-			} else {
-				// Refresh failed, redirect to login
-				Cookies.remove('token');
-				Cookies.remove('refreshToken');
-				if (typeof window !== 'undefined') {
-					window.location.href = '/sign-in';
-				}
+				return refreshResult.data as RefreshResponse;
+			})();
+		}
+
+		const refreshedTokens = await refreshPromise;
+		refreshPromise = null;
+
+		if (refreshedTokens?.accessToken) {
+			Cookies.set('token', refreshedTokens.accessToken, getAccessTokenCookieOptions());
+
+			if (refreshedTokens.refreshToken) {
+				Cookies.set('refreshToken', refreshedTokens.refreshToken, getRefreshTokenCookieOptions());
+			}
+
+			// Retry the original request with fresh token
+			result = await baseQuery(args, api, extraOptions);
+		} else {
+			clearAuthCookies();
+			api.dispatch(setUnauthenticated());
+			if (typeof window !== 'undefined') {
+				window.location.href = '/sign-in';
 			}
 		}
 	}

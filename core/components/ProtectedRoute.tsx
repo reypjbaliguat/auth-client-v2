@@ -21,12 +21,12 @@ export default function ProtectedRoute({ children }: ProtectedRouteProps) {
 	const isAuthenticated = useAppSelector(selectIsAuthenticated);
 
 	useEffect(() => {
-		if (!isAuthenticated) {
+		if (!loading && !isAuthenticated) {
 			// In practice middleware should have redirected already,
 			// but this covers edge cases.
 			router.replace('/sign-in');
 		}
-	}, [isAuthenticated, router]);
+	}, [loading, isAuthenticated, router]);
 
 	if (loading) {
 		return <Loader />;

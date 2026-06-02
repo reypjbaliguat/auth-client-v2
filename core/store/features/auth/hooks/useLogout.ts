@@ -10,8 +10,8 @@ export function useLogout() {
 	const router = useRouter();
 
 	return () => {
-		Cookies.remove('token');
-		Cookies.remove('refreshToken');
+		Cookies.remove('token', { path: '/' });
+		Cookies.remove('refreshToken', { path: '/' });
 		dispatch(setUnauthenticated());
 		router.replace('/sign-in');
 	};
