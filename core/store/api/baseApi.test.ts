@@ -141,6 +141,15 @@ describe('baseApi reauth flow', () => {
 		);
 		expect(store.getState().auth.isAuthenticated).toBe(true);
 		expect(mockedFetch).toHaveBeenCalledTimes(3);
+
+		const refreshCall = mockedFetch.mock.calls.find(([input]) =>
+			getRequestUrl(input as RequestInfo | URL).includes('auth/refresh')
+		);
+		expect(refreshCall).toBeDefined();
+
+		const refreshRequest = refreshCall?.[0];
+		expect(refreshRequest).toBeInstanceOf(Request);
+		expect((refreshRequest as Request).headers.get('authorization')).toBeNull();
 	});
 
 	it('sets unauthenticated and clears cookies when refresh token is missing', async () => {

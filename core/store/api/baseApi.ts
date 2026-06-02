@@ -40,10 +40,14 @@ const isRefreshRequest = (args: string | FetchArgs) => {
 const baseQuery = fetchBaseQuery({
 	baseUrl: process.env.NEXT_PUBLIC_API_URL,
 	prepareHeaders: (headers, { arg }) => {
-		// Get auth token from secure cookie
-		const token = Cookies.get('token');
-		if (token) {
-			headers.set('authorization', `Bearer ${token}`);
+		const shouldAttachAuthHeader = !isRefreshRequest(arg as string | FetchArgs);
+
+		// Avoid sending an expired access token while requesting a token refresh.
+		if (shouldAttachAuthHeader) {
+			const token = Cookies.get('token');
+			if (token) {
+				headers.set('authorization', `Bearer ${token}`);
+			}
 		}
 
 		// Only set content-type for requests with body
