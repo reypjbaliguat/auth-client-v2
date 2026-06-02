@@ -1,5 +1,6 @@
+'use client';
 function page() {
-	return <div></div>;
+	return <div>settings</div>;
 }
 
 export default page;

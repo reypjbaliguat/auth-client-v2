@@ -1,3 +1,4 @@
+'use client';
 import { Dashboard } from './components/Dashboard';
 
 function Layout({ children }: { children: React.ReactNode }) {
